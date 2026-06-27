@@ -1,0 +1,24 @@
+# dependencias
+/node_modules
+
+# build
+/.next/
+/out/
+/build
+/.claude/
+
+# next
+next-env.d.ts
+
+# env
+.env
+.env.local
+.env.*.local
+
+# uploads locales (en producción viven fuera del repo, en public_html/uploads/productos)
+/public/uploads/productos/*
+!/public/uploads/productos/.gitkeep
+
+# logs / sistema
+*.log
+.DS_Store

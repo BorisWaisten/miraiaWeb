@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  Variables de marca MIRAIA — fuente: Manual de Identidad (Mayo 2025).
+  --font-serif y --font-sans son inyectadas por next/font en layout.tsx.
+*/
+:root {
+  --color-obsidian: #111111;
+  --color-graphite: #2c2c2a;
+  --color-graphite-border: #444441;
+  --color-graphite-muted: #888780;
+  --color-cement: #5f5e5a;
+  --color-mist: #d3d1c7;
+  --color-ivory: #f1efe8;
+  --color-bronze: #c8a96e;
+}
+
+html,
+body {
+  background-color: var(--color-graphite);
+  color: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+}
