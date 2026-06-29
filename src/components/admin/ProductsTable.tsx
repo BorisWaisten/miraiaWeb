@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { apiGet, apiDelete } from '@/lib/api';
 import type { Producto } from '@/models/producto';
-import { CATEGORIA_LABEL } from '@/models/producto';
 
 /** Tabla de productos del panel admin — listar, ir a editar, eliminar. */
 export function ProductsTable() {
@@ -20,9 +19,7 @@ export function ProductsTable() {
     setProductos(res.data ?? []);
   }
 
-  useEffect(() => {
-    cargar();
-  }, []);
+  useEffect(() => { cargar(); }, []);
 
   async function handleEliminar(id: number) {
     if (!confirm('¿Eliminar este producto? Esta acción no se puede deshacer.')) return;
@@ -37,8 +34,9 @@ export function ProductsTable() {
     <table className="w-full border border-graphite-border text-left text-sm">
       <thead>
         <tr className="border-b border-graphite-border text-[11px] uppercase tracking-wide text-graphite-muted">
+          <th className="px-4 py-3 w-14" />
           <th className="px-4 py-3">Producto</th>
-          <th className="px-4 py-3">Categoría</th>
+          <th className="px-4 py-3">Catálogo</th>
           <th className="px-4 py-3">Estado</th>
           <th className="px-4 py-3" />
         </tr>
@@ -46,8 +44,25 @@ export function ProductsTable() {
       <tbody>
         {productos.map((p) => (
           <tr key={p.id} className="border-b border-graphite-border last:border-0">
+            <td className="px-4 py-2">
+              <div className="h-10 w-10 bg-graphite-tile overflow-hidden">
+                {p.imagenPrincipal ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={p.imagenPrincipal}
+                    alt={p.nombre}
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center text-[9px] text-graphite-muted">
+                    —
+                  </div>
+                )}
+              </div>
+            </td>
             <td className="px-4 py-3 text-white">{p.nombre}</td>
-            <td className="px-4 py-3 text-graphite-muted">{CATEGORIA_LABEL[p.categoria]}</td>
+            <td className="px-4 py-3 text-graphite-muted">{p.catalogoNombre}</td>
             <td className="px-4 py-3">
               <span className={p.activo ? 'text-bronze' : 'text-graphite-muted'}>
                 {p.activo ? 'Activo' : 'Inactivo'}
@@ -65,7 +80,7 @@ export function ProductsTable() {
         ))}
         {productos.length === 0 && (
           <tr>
-            <td colSpan={4} className="px-4 py-6 text-center text-graphite-muted">
+            <td colSpan={5} className="px-4 py-6 text-center text-graphite-muted">
               Todavía no hay productos cargados.
             </td>
           </tr>

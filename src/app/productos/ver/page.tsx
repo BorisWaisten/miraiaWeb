@@ -5,20 +5,13 @@ import Link from 'next/link';
 import { SiteNav } from '@/components/public/SiteNav';
 import { SiteFooter } from '@/components/public/SiteFooter';
 import { apiGet } from '@/lib/api';
-import { CATEGORIA_LABEL, type Producto } from '@/models/producto';
+import type { Producto } from '@/models/producto';
 
-/**
- * Detalle de producto — ficha técnica de exhibición, SIN precio ni botón de compra.
- *
- * Usa /productos/ver/?slug=... (query param) en vez de /productos/[slug]/ a
- * propósito: con `output: 'export'` cada ruta dinámica necesitaría conocerse
- * en build time (generateStaticParams), pero los productos se crean después
- * del build desde el panel admin — el query param resuelve esto sin rebuild.
- */
 export default function ProductoDetallePage() {
   const [slug, setSlug] = useState<string | null>(null);
-  const [producto, setProducto] = useState<Producto | null | undefined>(undefined); // undefined = cargando
+  const [producto, setProducto] = useState<Producto | null | undefined>(undefined);
   const [notFoundFlag, setNotFoundFlag] = useState(false);
+  const [imagenActiva, setImagenActiva] = useState(0);
 
   useEffect(() => {
     setSlug(new URLSearchParams(window.location.search).get('slug'));
@@ -26,15 +19,9 @@ export default function ProductoDetallePage() {
 
   useEffect(() => {
     if (slug === null) return;
-    if (slug === '') {
-      setNotFoundFlag(true);
-      return;
-    }
+    if (slug === '') { setNotFoundFlag(true); return; }
     apiGet<Producto>(`/producto.php?slug=${encodeURIComponent(slug)}`).then((res) => {
-      if (!res.ok || !res.data) {
-        setNotFoundFlag(true);
-        return;
-      }
+      if (!res.ok || !res.data) { setNotFoundFlag(true); return; }
       setProducto(res.data);
     });
   }, [slug]);
@@ -64,22 +51,54 @@ export default function ProductoDetallePage() {
     );
   }
 
-  const specs = producto.especificaciones ? Object.entries(producto.especificaciones) : [];
+  const specs    = producto.especificaciones ? Object.entries(producto.especificaciones) : [];
+  const todasLasImagenes = [
+    producto.imagenPrincipal,
+    ...(producto.imagenesGaleria ?? []),
+  ].filter(Boolean) as string[];
 
   return (
     <div className="bg-graphite">
       <SiteNav />
 
       <section className="grid grid-cols-1 gap-px bg-graphite-border md:grid-cols-2">
-        <div className="relative min-h-[360px] bg-graphite-tile">
-          {producto.imagenPrincipal ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={producto.imagenPrincipal} alt={producto.nombre} className="h-full w-full object-cover" />
-          ) : (
-            <div className="flex h-full items-center justify-center text-xs text-graphite-muted">Sin imagen</div>
+        {/* Galería de imágenes */}
+        <div>
+          <div className="relative min-h-[360px] bg-graphite-tile">
+            {todasLasImagenes.length > 0 ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={todasLasImagenes[imagenActiva]}
+                alt={producto.nombre}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center text-xs text-graphite-muted">
+                Sin imagen
+              </div>
+            )}
+          </div>
+          {/* Miniaturas — solo si hay más de 1 imagen */}
+          {todasLasImagenes.length > 1 && (
+            <div className="flex gap-px bg-graphite-border">
+              {todasLasImagenes.map((src, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setImagenActiva(i)}
+                  className={`relative h-16 flex-1 bg-graphite-tile transition-opacity ${
+                    imagenActiva === i ? 'ring-1 ring-inset ring-bronze' : 'opacity-50 hover:opacity-80'
+                  }`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={src} alt="" className="h-full w-full object-cover" loading="lazy" />
+                </button>
+              ))}
+            </div>
           )}
         </div>
 
+        {/* Ficha */}
         <div className="bg-graphite px-8 py-12 md:px-12">
           <Link
             href="/productos/"
@@ -87,11 +106,27 @@ export default function ProductoDetallePage() {
           >
             ← Volver al catálogo
           </Link>
-          <p className="mb-3 text-[10px] uppercase tracking-widest2 text-bronze">{CATEGORIA_LABEL[producto.categoria]}</p>
-          <h1 className="mb-5 font-serif text-3xl font-medium text-white">{producto.nombre}</h1>
-          <p className="mb-8 max-w-md text-sm leading-relaxed text-graphite-muted">
-            {producto.descripcionLarga || producto.descripcionCorta}
+          <p className="mb-3 text-[10px] uppercase tracking-widest2 text-bronze">
+            {producto.catalogoNombre}
           </p>
+          <h1 className="mb-5 font-serif text-3xl font-medium text-white">{producto.nombre}</h1>
+
+          {/* Descripción larga: renderiza HTML del editor Tiptap */}
+          {producto.descripcionLarga ? (
+            <div
+              className="mb-8 max-w-md text-sm leading-relaxed text-graphite-muted
+                [&_h2]:mb-2 [&_h2]:mt-4 [&_h2]:font-serif [&_h2]:text-base [&_h2]:text-white
+                [&_h3]:mb-1 [&_h3]:mt-3 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:text-white
+                [&_p]:mb-2 [&_ul]:mb-2 [&_ul]:ml-4 [&_ul]:list-disc
+                [&_ol]:mb-2 [&_ol]:ml-4 [&_ol]:list-decimal
+                [&_strong]:font-semibold [&_strong]:text-white"
+              dangerouslySetInnerHTML={{ __html: producto.descripcionLarga }}
+            />
+          ) : (
+            <p className="mb-8 max-w-md text-sm leading-relaxed text-graphite-muted">
+              {producto.descripcionCorta}
+            </p>
+          )}
 
           {specs.length > 0 && (
             <dl className="mb-10 max-w-md divide-y divide-graphite-border border-y border-graphite-border">

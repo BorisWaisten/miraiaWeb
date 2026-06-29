@@ -1,12 +1,11 @@
 <?php
 /**
- * GET  /api/admin/productos.php           → listado completo (incluye inactivos), protegido
- * POST /api/admin/productos.php           → crear producto, protegido
+ * GET  /api/admin/productos.php  → listado completo (incluye inactivos), protegido
+ * POST /api/admin/productos.php  → crear producto
  *   multipart/form-data:
- *     nombre, categoria, descripcionCorta, descripcionLarga?, especificaciones? (JSON string),
- *     destacado?, activo?, orden?, imagen? (File)
- *
- * No requiere campo `precio`: el catálogo es de exhibición/consulta, no de venta online.
+ *     nombre, catalogoId, descripcionCorta, descripcionLarga?,
+ *     especificaciones? (JSON string), destacado?, activo?, orden?,
+ *     imagen_1? (File — principal), imagen_2? (File), imagen_3? (File)
  */
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../lib/Response.php';
@@ -15,7 +14,7 @@ require_once __DIR__ . '/../lib/Productos.php';
 require_once __DIR__ . '/../lib/Validacion.php';
 require_once __DIR__ . '/../lib/Upload.php';
 
-Auth::requerirSesion(); // protege tanto GET como POST de este endpoint
+Auth::requerirSesion();
 
 $metodo = $_SERVER['REQUEST_METHOD'] ?? '';
 
@@ -25,9 +24,10 @@ if ($metodo === 'GET') {
 
 if ($metodo === 'POST') {
     $datos = Validacion::datosProducto($_POST, esCreacion: true);
-    $rutaImagen = Upload::guardarImagenProducto($_FILES['imagen'] ?? null);
 
-    $producto = Productos::crear($datos, $rutaImagen);
+    [$imagenPrincipal, $galeria] = Upload::procesarImagenesProducto($_FILES);
+
+    $producto = Productos::crear($datos, $imagenPrincipal, $galeria);
     Response::ok($producto, 201);
 }
 

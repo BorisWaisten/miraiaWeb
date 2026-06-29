@@ -1,27 +1,16 @@
 /**
  * Modelo de dominio "Producto" — catálogo de exhibición MIRAIA.
- * IMPORTANTE: este modelo NO contiene campo de precio a propósito.
- * El sitio público es solo de exhibición/consulta para arquitectos y estudios B2B.
+ * IMPORTANTE: no contiene campo de precio (sitio B2B de exhibición).
  *
- * Esta forma coincide 1:1 con lo que devuelve la API PHP (php-api/lib/Productos.php
- * → mapRow), que ya entrega los datos en camelCase listos para consumir.
+ * Desde la migración 001, las categorías son dinámicas (tabla `catalogos`).
+ * El modelo ya no usa el ENUM fijo `categoria`; en su lugar incluye
+ * `catalogoId`, `catalogoSlug` y `catalogoNombre` que provienen del JOIN
+ * que hace la API PHP al leer productos.
+ *
+ * Coincide 1:1 con Productos::mapRow() en php-api/lib/Productos.php.
  */
 
-export const CATEGORIAS_PRODUCTO = [
-  'piso_tecnico',
-  'alfombra_modular',
-  'vinilico_lvt',
-] as const;
-
-export type CategoriaProducto = (typeof CATEGORIAS_PRODUCTO)[number];
-
-export const CATEGORIA_LABEL: Record<CategoriaProducto, string> = {
-  piso_tecnico: 'Piso técnico',
-  alfombra_modular: 'Alfombra modular',
-  vinilico_lvt: 'Vinílico LVT',
-};
-
-/** Especificaciones técnicas — estructura libre pero tipada en el frontend. */
+/** Especificaciones técnicas — estructura libre pero tipada. */
 export interface EspecificacionesProducto {
   material?: string;
   dimensiones?: string;
@@ -36,11 +25,20 @@ export interface Producto {
   id: number;
   slug: string;
   nombre: string;
-  categoria: CategoriaProducto;
+  /** ID del catálogo al que pertenece */
+  catalogoId: number;
+  /** Slug del catálogo (para filtros de URL) */
+  catalogoSlug: string;
+  /** Nombre legible del catálogo */
+  catalogoNombre: string;
   descripcionCorta: string;
+  /** HTML limpio generado por el editor Tiptap */
   descripcionLarga: string | null;
   especificaciones: EspecificacionesProducto | null;
+  /** Imagen principal (thumbnail en listados) */
   imagenPrincipal: string | null;
+  /** Imágenes adicionales — máx. 2 (imágenes 2 y 3) */
+  imagenesGaleria: string[];
   destacado: boolean;
   activo: boolean;
   orden: number;

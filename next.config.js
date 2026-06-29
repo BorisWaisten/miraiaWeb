@@ -1,17 +1,34 @@
 /** @type {import('next').NextConfig} */
+
+// NEXT_EXPORT=true  →  genera la carpeta /out para subir al servidor (FTP)
+// (sin esta variable)  →  modo dev con proxy al servidor remoto
+const isExport = process.env.NEXT_EXPORT === 'true';
+
 const nextConfig = {
   reactStrictMode: true,
-  // El hosting SiteGround de este proyecto NO soporta Node.js (confirmado por
-  // soporte) — solo Apache + PHP + MySQL. Por eso el frontend se exporta como
-  // sitio 100% estático (HTML/CSS/JS) y se sube por FTP a public_html/.
-  // Todo lo dinámico (catálogo, login, CRUD de productos, upload de imagen)
-  // pasa por la API en PHP (carpeta php-api/, ver README) vía fetch del lado
-  // del cliente — no hay Server Components con acceso a DB ni API routes.
-  output: 'export',
   images: {
-    unoptimized: true, // sin servidor de Next no hay /_next/image; ya usamos <img> nativo
+    unoptimized: true,
   },
-  trailingSlash: true, // genera carpeta/index.html por ruta — más compatible con Apache estático
+  trailingSlash: true,
+
+  // Solo en modo export estático
+  ...(isExport && { output: 'export' }),
+
+  // Proxy dev → servidor remoto. Incompatible con output:export, por eso es mutuamente exclusivo.
+  ...(!isExport && {
+    async rewrites() {
+      return [
+        {
+          source: '/api/:path*',
+          destination: 'https://ignaciom37.sg-host.com/api/:path*',
+        },
+        {
+          source: '/uploads/:path*',
+          destination: 'https://ignaciom37.sg-host.com/uploads/:path*',
+        },
+      ];
+    },
+  }),
 };
 
-module.exports = nextConfig;
+export default nextConfig;

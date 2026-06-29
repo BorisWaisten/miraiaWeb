@@ -2,15 +2,11 @@
 defined('MIRAIA_API_BOOT') or die('Acceso directo no permitido.');
 
 require_once __DIR__ . '/Response.php';
-require_once __DIR__ . '/Productos.php';
+require_once __DIR__ . '/Catalogos.php';
 
 /**
- * Validación de entrada para crear/actualizar productos. Equivalente PHP de
- * los esquemas zod del prototipo Next/Node. Corta con 400 ante el primer error.
- *
- * @param array $input    típicamente $_POST
- * @param bool  $esCreacion si es true, nombre/categoria/descripcionCorta son obligatorios;
- *                           si es false (edición), todos los campos son opcionales.
+ * Validación de entrada para crear/actualizar productos.
+ * Desde la migración 001 usa `catalogoId` (FK dinámica) en lugar del ENUM `categoria`.
  */
 final class Validacion
 {
@@ -18,6 +14,7 @@ final class Validacion
     {
         $datos = [];
 
+        // nombre
         $nombre = trim($input['nombre'] ?? '');
         if ($esCreacion || $nombre !== '') {
             if (mb_strlen($nombre) < 2 || mb_strlen($nombre) > 160) {
@@ -26,14 +23,22 @@ final class Validacion
             $datos['nombre'] = $nombre;
         }
 
-        $categoria = trim($input['categoria'] ?? '');
-        if ($esCreacion || $categoria !== '') {
-            if (!in_array($categoria, Productos::CATEGORIAS_VALIDAS, true)) {
-                Response::error('Categoría inválida.', 400);
+        // catalogoId (reemplaza el viejo campo `categoria` ENUM)
+        $catalogoIdRaw = $input['catalogoId'] ?? '';
+        if ($esCreacion || $catalogoIdRaw !== '') {
+            $catalogoId = (int) $catalogoIdRaw;
+            if ($catalogoId <= 0) {
+                Response::error('El catálogo es obligatorio.', 400);
             }
-            $datos['categoria'] = $categoria;
+            // Verificar que el catálogo exista y esté activo
+            $catalogo = Catalogos::obtenerPorId($catalogoId);
+            if (!$catalogo) {
+                Response::error('El catálogo seleccionado no existe.', 400);
+            }
+            $datos['catalogoId'] = $catalogoId;
         }
 
+        // descripcionCorta
         $descripcionCorta = trim($input['descripcionCorta'] ?? '');
         if ($esCreacion || $descripcionCorta !== '') {
             if (mb_strlen($descripcionCorta) < 10 || mb_strlen($descripcionCorta) > 280) {
@@ -42,10 +47,14 @@ final class Validacion
             $datos['descripcionCorta'] = $descripcionCorta;
         }
 
+        // descripcionLarga — se almacena como HTML limpio proveniente del editor Tiptap
         if (isset($input['descripcionLarga'])) {
-            $datos['descripcionLarga'] = mb_substr(trim($input['descripcionLarga']), 0, 4000);
+            // strip_tags no alcanza para HTML de un editor rico; confiamos en que Tiptap
+            // genera HTML semántico limpio. Se limita a 20 000 chars para prevenir abusos.
+            $datos['descripcionLarga'] = mb_substr($input['descripcionLarga'], 0, 20000);
         }
 
+        // especificaciones (JSON string opcional)
         if (isset($input['especificaciones']) && $input['especificaciones'] !== '') {
             $decoded = json_decode($input['especificaciones'], true);
             if (!is_array($decoded)) {
@@ -69,7 +78,7 @@ final class Validacion
 
     public static function credencialesLogin(array $input): array
     {
-        $email = trim($input['email'] ?? '');
+        $email    = trim($input['email'] ?? '');
         $password = (string) ($input['password'] ?? '');
 
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {

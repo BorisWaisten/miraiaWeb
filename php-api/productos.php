@@ -2,7 +2,7 @@
 /**
  * GET /api/productos.php
  * Endpoint PÚBLICO de solo lectura — catálogo de exhibición (sin precios).
- * Soporta filtro opcional ?categoria=piso_tecnico|alfombra_modular|vinilico_lvt
+ * Soporta filtro opcional ?catalogo=<slug> para filtrar por catálogo.
  * No requiere autenticación.
  */
 require_once __DIR__ . '/config.php';
@@ -13,15 +13,12 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'GET') {
     Response::error('Método no permitido.', 405);
 }
 
-$categoria = $_GET['categoria'] ?? null;
-if ($categoria !== null && !in_array($categoria, Productos::CATEGORIAS_VALIDAS, true)) {
-    Response::error('Categoría inválida.', 400);
-}
+$catalogoSlug = $_GET['catalogo'] ?? null;
 
-$productos = Productos::listar(soloActivos: true);
-
-if ($categoria !== null) {
-    $productos = array_values(array_filter($productos, static fn($p) => $p['categoria'] === $categoria));
+if ($catalogoSlug !== null) {
+    $productos = Productos::listarPorCatalogo($catalogoSlug, soloActivos: true);
+} else {
+    $productos = Productos::listar(soloActivos: true);
 }
 
 Response::ok($productos);

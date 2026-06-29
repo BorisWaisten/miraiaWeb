@@ -53,6 +53,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <p className="mb-10 font-serif text-base tracking-widest2 text-white">MIRAIA · Admin</p>
           <nav className="flex flex-col gap-1">
             <AdminNavLink href="/admin/">Resumen</AdminNavLink>
+            <AdminNavLink href="/admin/catalogos/">Catálogos</AdminNavLink>
             <AdminNavLink href="/admin/productos/">Productos</AdminNavLink>
           </nav>
         </div>

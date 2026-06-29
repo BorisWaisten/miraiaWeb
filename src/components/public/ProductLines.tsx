@@ -1,14 +1,13 @@
 import Link from 'next/link';
 import type { Producto } from '@/models/producto';
-import { CATEGORIA_LABEL } from '@/models/producto';
 
 interface Props {
   productos: Producto[];
 }
 
 /**
- * Sección "Líneas de producto" — grid de 3 cards con separadores de 1px,
- * tal como en el HTML de referencia. SIN precios: solo categoría, nombre y descripción corta.
+ * Sección "Líneas de producto" — grid de 3 cards con separadores de 1px.
+ * SIN precios: solo catálogo, nombre y descripción corta.
  */
 export function ProductLines({ productos }: Props) {
   return (
@@ -27,13 +26,6 @@ export function ProductLines({ productos }: Props) {
             href={`/productos/ver/?slug=${producto.slug}`}
             className="block bg-graphite transition-opacity hover:opacity-90"
           >
-            {/*
-              Imagen servida como archivo ESTÁTICO real desde public_html/uploads/productos
-              (fuera del build de Next). Se usa <img> nativo en vez de next/image: el
-              optimizador de next/image espera archivos dentro de /public al momento del
-              build/arranque, y esta carpeta vive fuera del build y cambia en runtime vía
-              el panel de admin — un <img> directo es más simple y confiable en SiteGround.
-            */}
             <div className="relative h-[200px] bg-graphite-tile">
               {producto.imagenPrincipal ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -51,7 +43,7 @@ export function ProductLines({ productos }: Props) {
             </div>
             <div className="px-6 py-5">
               <p className="mb-2 text-[10px] uppercase tracking-wide text-bronze">
-                {CATEGORIA_LABEL[producto.categoria]}
+                {producto.catalogoNombre}
               </p>
               <p className="mb-1.5 font-serif text-base text-white">{producto.nombre}</p>
               <p className="text-xs leading-relaxed text-graphite-muted">{producto.descripcionCorta}</p>
