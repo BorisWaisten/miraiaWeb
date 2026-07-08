@@ -20,8 +20,8 @@ miraiaWeb/
 │   ├── models/                    # Tipos producto.ts / proyecto.ts (coinciden con la respuesta de la API)
 │   ├── app/
 │   │   ├── page.tsx                 # Home — client component, fetch a /api/productos.php + /api/proyectos.php
-│   │   ├── productos/page.tsx       # Catálogo filtrable (?categoria=)
-│   │   ├── productos/ver/page.tsx   # Detalle — /productos/ver/?slug=... (query param, no [slug])
+│   │   ├── productos/page.tsx       # Grilla de series
+│   │   ├── productos/ver/page.tsx   # Detalle — /productos/ver/?slug=... (carrusel + descripciones)
 │   │   └── admin/
 │   │       ├── login/page.tsx       # Único público dentro de /admin
 │   │       ├── layout.tsx           # Guard de UX: llama a /api/admin/me.php, redirige si no hay sesión
@@ -42,7 +42,7 @@ miraiaWeb/
     │   ├── Upload.php                # move_uploaded_file() a public_html/uploads/productos/
     │   ├── Productos.php / Proyectos.php  # Acceso a datos
     │   └── Validacion.php            # Validación de inputs (equivalente a los esquemas zod previos)
-    ├── productos.php / producto.php / proyectos.php   # ── PÚBLICOS, solo lectura
+    ├── productos.php / proyectos.php   # ── PÚBLICOS, solo lectura
     ├── admin/
     │   ├── login.php / logout.php / me.php
     │   ├── productos.php             # GET listado admin / POST crear (multipart + imagen)
@@ -50,9 +50,11 @@ miraiaWeb/
     └── scripts/crear-admin.php       # Bootstrap del primer usuario admin (CLI o HTTP con token)
 ```
 
-**Por qué query params en vez de rutas dinámicas (`[slug]`, `[id]`):** con `output: 'export'` cada ruta tiene que poder resolverse en build time. Los productos se crean después del build, desde el panel — por eso `/productos/ver/?slug=...` y `/admin/productos/editar/?id=...` en vez de segmentos dinámicos, y los datos se piden siempre del lado del cliente.
+**Por qué query params en vez de rutas dinámicas (`[slug]`, `[id]`):** con `output: 'export'` cada ruta tiene que poder resolverse en build time. Los productos se crean después del build, desde el panel — por eso `/admin/productos/editar/?id=...` en vez de segmentos dinámicos, y los datos se piden siempre del lado del cliente.
 
-**Separación pública/admin:** `php-api/productos.php`, `producto.php` y `proyectos.php` son de solo lectura y públicos. Todo lo que muta datos vive bajo `php-api/admin/*` y exige sesión válida (`Auth::requerirSesion()` al principio de cada script) — la protección real está siempre en el servidor PHP, nunca solo en el frontend.
+**Modelo de producto (migraciones 003/004):** un producto es una serie — nombre, subtítulo, descripción breve y larga (texto plano) + imagen principal + galería de N imágenes (variantes). Sin catálogos, especificaciones ni colecciones. El detalle no tiene endpoint propio: la página busca el slug dentro del listado público.
+
+**Separación pública/admin:** `php-api/productos.php` y `proyectos.php` son de solo lectura y públicos. Todo lo que muta datos vive bajo `php-api/admin/*` y exige sesión válida (`Auth::requerirSesion()` al principio de cada script) — la protección real está siempre en el servidor PHP, nunca solo en el frontend.
 
 ## Paleta y tipografía (Manual de Identidad, Mayo 2025)
 

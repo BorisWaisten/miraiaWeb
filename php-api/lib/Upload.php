@@ -5,8 +5,8 @@ require_once __DIR__ . '/Response.php';
 
 /**
  * Subida de imágenes de producto al filesystem local del servidor SiteGround.
- * Soporta una imagen principal (imagen_1) y hasta 2 imágenes adicionales
- * (imagen_2, imagen_3) que se almacenan en `imagenes_galeria` JSON.
+ * Soporta una imagen principal (imagen_1) y una galería de N imágenes
+ * (input múltiple `galeria[]`) almacenada en `imagenes_galeria` JSON.
  */
 final class Upload
 {
@@ -20,7 +20,7 @@ final class Upload
     private static function dirAbsoluta(): string
     {
         $configurada = env('UPLOADS_ABS_PATH');
-        return $configurada ?: __DIR__ . '/../../public/uploads/productos';
+        return $configurada ?: __DIR__ . '/../../uploads/productos';
     }
 
     private static function rutaPublicaBase(): string
@@ -61,50 +61,56 @@ final class Upload
     }
 
     /**
-     * Procesa las tres entradas de imagen de un producto (imagen_1, imagen_2, imagen_3)
-     * de $_FILES. Devuelve [$imagenPrincipal, $galeriaArray].
+     * Procesa las imágenes de un producto. Devuelve [$imagenPrincipal, $galeriaArray].
      *
-     * - $imagenPrincipal: ruta pública o null (si no se envió imagen_1)
-     * - $galeriaArray: array (vacío, 1 o 2 elementos) con rutas de imágenes 2 y 3
+     * - imagen_1 ($_FILES): imagen principal nueva (opcional)
+     * - galeria[] ($_FILES múltiple): imágenes nuevas que se AGREGAN a la galería
+     * - $galeriaConservar: rutas existentes que se mantienen (las que faltan se
+     *   borran del disco). null = mantener toda la galería existente.
      *
-     * @param array $files       típicamente $_FILES
-     * @param array $existentes  ['imagenPrincipal' => ..., 'imagenesGaleria' => [...]]
-     *                           del producto existente (solo relevante en edición)
-     * @param array $borrar      flags de borrado: ['imagen_1' => true, 'imagen_2' => true, ...]
+     * @param array      $files            típicamente $_FILES
+     * @param array      $existentes       producto existente (solo en edición)
+     * @param bool       $borrarPrincipal  true = borrar imagen principal existente
+     * @param array|null $galeriaConservar rutas existentes a conservar
      */
     public static function procesarImagenesProducto(
         array $files,
         array $existentes = [],
-        array $borrar = []
+        bool $borrarPrincipal = false,
+        ?array $galeriaConservar = null
     ): array {
         // — Imagen principal (imagen_1) —
         $nuevaImagen1 = self::guardarImagenProducto($files['imagen_1'] ?? null);
 
-        if ($nuevaImagen1 !== null && !empty($existentes['imagenPrincipal'])) {
-            // Nueva imagen subida: borrar la anterior del disco
-            self::borrarImagenProducto($existentes['imagenPrincipal']);
-        }
-        if ($nuevaImagen1 === null && !empty($borrar['imagen_1']) && !empty($existentes['imagenPrincipal'])) {
-            // Sin reemplazo pero se pidió borrar: quitar del disco
-            // El caller usa el flag $borrar['imagen_1'] para saber que debe poner NULL en DB
+        if (($nuevaImagen1 !== null || $borrarPrincipal) && !empty($existentes['imagenPrincipal'])) {
             self::borrarImagenProducto($existentes['imagenPrincipal']);
         }
 
-        // — Imágenes de galería (imagen_2, imagen_3) —
-        $galeria = $existentes['imagenesGaleria'] ?? [];
+        // — Galería —
+        $existente = $existentes['imagenesGaleria'] ?? [];
+        $galeria   = $galeriaConservar === null
+            ? $existente
+            : array_values(array_intersect($existente, $galeriaConservar));
 
-        foreach ([1 => 'imagen_2', 2 => 'imagen_3'] as $idx => $campo) {
-            $nueva = self::guardarImagenProducto($files[$campo] ?? null);
+        // Borrar del disco las existentes que no se conservan
+        foreach (array_diff($existente, $galeria) as $ruta) {
+            self::borrarImagenProducto($ruta);
+        }
 
-            if ($nueva !== null) {
-                // Borra la anterior si había
-                if (!empty($galeria[$idx - 1])) {
-                    self::borrarImagenProducto($galeria[$idx - 1]);
+        // Agregar las nuevas (input múltiple `galeria[]` — $_FILES lo entrega como arrays paralelos)
+        $lote = $files['galeria'] ?? null;
+        if ($lote !== null && is_array($lote['name'] ?? null)) {
+            foreach (array_keys($lote['name']) as $i) {
+                $archivo = [
+                    'name'     => $lote['name'][$i],
+                    'tmp_name' => $lote['tmp_name'][$i],
+                    'size'     => $lote['size'][$i],
+                    'error'    => $lote['error'][$i],
+                ];
+                $ruta = self::guardarImagenProducto($archivo);
+                if ($ruta !== null) {
+                    $galeria[] = $ruta;
                 }
-                $galeria[$idx - 1] = $nueva;
-            } elseif (!empty($borrar[$campo]) && !empty($galeria[$idx - 1])) {
-                self::borrarImagenProducto($galeria[$idx - 1]);
-                unset($galeria[$idx - 1]);
             }
         }
 

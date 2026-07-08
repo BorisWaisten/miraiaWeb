@@ -77,3 +77,6 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
 }
 
 header('Content-Type: application/json; charset=utf-8');
+// Evita que SiteGround Dynamic Cache guarde respuestas de la API
+header('Cache-Control: no-store, no-cache, must-revalidate');
+header('Pragma: no-cache');

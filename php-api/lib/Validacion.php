@@ -2,11 +2,10 @@
 defined('MIRAIA_API_BOOT') or die('Acceso directo no permitido.');
 
 require_once __DIR__ . '/Response.php';
-require_once __DIR__ . '/Catalogos.php';
 
 /**
  * Validación de entrada para crear/actualizar productos.
- * Desde la migración 001 usa `catalogoId` (FK dinámica) en lugar del ENUM `categoria`.
+ * Desde la migración 003 un producto solo tiene nombre, imágenes y flags.
  */
 final class Validacion
 {
@@ -23,44 +22,15 @@ final class Validacion
             $datos['nombre'] = $nombre;
         }
 
-        // catalogoId (reemplaza el viejo campo `categoria` ENUM)
-        $catalogoIdRaw = $input['catalogoId'] ?? '';
-        if ($esCreacion || $catalogoIdRaw !== '') {
-            $catalogoId = (int) $catalogoIdRaw;
-            if ($catalogoId <= 0) {
-                Response::error('El catálogo es obligatorio.', 400);
+        // Textos opcionales — vacío se guarda como NULL
+        foreach (['subtitulo' => 160, 'descripcionCorta' => 280, 'descripcionLarga' => 20000] as $campo => $max) {
+            if (array_key_exists($campo, $input)) {
+                $valor = trim((string) $input[$campo]);
+                if (mb_strlen($valor) > $max) {
+                    Response::error("El campo \"{$campo}\" no puede superar los {$max} caracteres.", 400);
+                }
+                $datos[$campo] = $valor !== '' ? $valor : null;
             }
-            // Verificar que el catálogo exista y esté activo
-            $catalogo = Catalogos::obtenerPorId($catalogoId);
-            if (!$catalogo) {
-                Response::error('El catálogo seleccionado no existe.', 400);
-            }
-            $datos['catalogoId'] = $catalogoId;
-        }
-
-        // descripcionCorta
-        $descripcionCorta = trim($input['descripcionCorta'] ?? '');
-        if ($esCreacion || $descripcionCorta !== '') {
-            if (mb_strlen($descripcionCorta) < 10 || mb_strlen($descripcionCorta) > 280) {
-                Response::error('La descripción corta es obligatoria (10 a 280 caracteres).', 400);
-            }
-            $datos['descripcionCorta'] = $descripcionCorta;
-        }
-
-        // descripcionLarga — se almacena como HTML limpio proveniente del editor Tiptap
-        if (isset($input['descripcionLarga'])) {
-            // strip_tags no alcanza para HTML de un editor rico; confiamos en que Tiptap
-            // genera HTML semántico limpio. Se limita a 20 000 chars para prevenir abusos.
-            $datos['descripcionLarga'] = mb_substr($input['descripcionLarga'], 0, 20000);
-        }
-
-        // especificaciones (JSON string opcional)
-        if (isset($input['especificaciones']) && $input['especificaciones'] !== '') {
-            $decoded = json_decode($input['especificaciones'], true);
-            if (!is_array($decoded)) {
-                Response::error('El campo "especificaciones" debe ser JSON válido.', 400);
-            }
-            $datos['especificaciones'] = $decoded;
         }
 
         if (isset($input['destacado'])) {

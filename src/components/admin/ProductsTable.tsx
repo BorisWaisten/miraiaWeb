@@ -36,7 +36,7 @@ export function ProductsTable() {
         <tr className="border-b border-graphite-border text-[11px] uppercase tracking-wide text-graphite-muted">
           <th className="px-4 py-3 w-14" />
           <th className="px-4 py-3">Producto</th>
-          <th className="px-4 py-3">Catálogo</th>
+          <th className="px-4 py-3">Imágenes</th>
           <th className="px-4 py-3">Estado</th>
           <th className="px-4 py-3" />
         </tr>
@@ -62,7 +62,9 @@ export function ProductsTable() {
               </div>
             </td>
             <td className="px-4 py-3 text-white">{p.nombre}</td>
-            <td className="px-4 py-3 text-graphite-muted">{p.catalogoNombre}</td>
+            <td className="px-4 py-3 text-graphite-muted">
+              {(p.imagenPrincipal ? 1 : 0) + p.imagenesGaleria.length}
+            </td>
             <td className="px-4 py-3">
               <span className={p.activo ? 'text-bronze' : 'text-graphite-muted'}>
                 {p.activo ? 'Activo' : 'Inactivo'}

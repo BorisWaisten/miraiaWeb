@@ -2,8 +2,10 @@
 /**
  * GET    /api/admin/producto.php?id=12  → detalle (incluye inactivos), para el form de edición
  * POST   /api/admin/producto.php?id=12  → actualizar
- *   multipart/form-data — mismos campos que crear, más flags de borrado:
- *     borrar_imagen_1=1, borrar_imagen_2=1, borrar_imagen_3=1
+ *   multipart/form-data — mismos campos que crear, más:
+ *     borrar_imagen_1=1                → limpiar imagen principal
+ *     galeria_conservar (JSON array)   → rutas existentes que se mantienen;
+ *                                        si no se envía, la galería no se toca.
  * DELETE /api/admin/producto.php?id=12  → eliminar producto + todas sus imágenes en disco
  */
 require_once __DIR__ . '/../config.php';
@@ -38,18 +40,24 @@ if ($metodo === 'POST') {
 
     $datos = Validacion::datosProducto($_POST, esCreacion: false);
 
-    $borrar = [
-        'imagen_1' => !empty($_POST['borrar_imagen_1']),
-        'imagen_2' => !empty($_POST['borrar_imagen_2']),
-        'imagen_3' => !empty($_POST['borrar_imagen_3']),
-    ];
+    $borrarPrincipal = !empty($_POST['borrar_imagen_1']);
 
-    [$nuevaImagen1, $nuevaGaleria] = Upload::procesarImagenesProducto($_FILES, $existente, $borrar);
+    $galeriaConservar = null;
+    if (isset($_POST['galeria_conservar'])) {
+        $decoded = json_decode($_POST['galeria_conservar'], true);
+        $galeriaConservar = is_array($decoded) ? $decoded : [];
+    }
 
-    // Upload::procesarImagenesProducto ya borró del disco las imágenes que debía.
-    // El flag $borrarImagenPrincipal le dice a Productos::actualizar que ponga NULL
-    // cuando no viene nueva imagen_1 pero sí se pidió borrar la existente.
-    $borrarPrincipal = $borrar['imagen_1'] && $nuevaImagen1 === null;
+    [$nuevaImagen1, $nuevaGaleria] = Upload::procesarImagenesProducto(
+        $_FILES,
+        $existente,
+        $borrarPrincipal,
+        $galeriaConservar
+    );
+
+    // Upload ya borró del disco lo que debía. $borrarPrincipal le dice a
+    // Productos::actualizar que ponga NULL si no vino imagen_1 nueva.
+    $borrarPrincipal = $borrarPrincipal && $nuevaImagen1 === null;
 
     $actualizado = Productos::actualizar($id, $datos, $nuevaImagen1, $nuevaGaleria, $borrarPrincipal);
     Response::ok($actualizado);

@@ -25,13 +25,14 @@ export default function HomePage() {
     apiGet<Proyecto[]>('/proyectos.php').then((res) => setProyectos(res.data ?? []));
   }, []);
 
-  const destacados = (productos ?? []).filter((p) => p.destacado).slice(0, 3);
-  const productosHome = destacados.length > 0 ? destacados : (productos ?? []).slice(0, 3);
+  const todos = productos ?? [];
+  const destacados = todos.filter((p) => p.destacado).slice(0, 3);
+  const productosHome = destacados.length > 0 ? destacados : todos.slice(0, 3);
 
   return (
     <div className="bg-graphite">
       <SiteNav />
-      <Hero />
+      <Hero productos={todos} />
       <MetricsStrip />
       {productos !== null && <ProductLines productos={productosHome} />}
       {proyectos !== null && proyectos.length > 0 && <Projects proyectos={proyectos} />}

@@ -1,8 +1,8 @@
-/** Footer — fondo negro (obsidiana), 4 columnas: marca, productos, empresa, contacto. */
+/** Footer — fondo negro (obsidiana), 3 columnas: marca, empresa, contacto. */
 export function SiteFooter() {
   return (
     <>
-      <footer className="grid grid-cols-1 gap-8 border-t border-graphite-border bg-obsidian px-8 py-12 md:grid-cols-4 md:px-12">
+      <footer className="grid grid-cols-1 gap-8 border-t border-graphite-border bg-obsidian px-8 py-12 md:grid-cols-3 md:px-12">
         <div>
           <svg width="24" height="24" viewBox="0 0 56 56" className="mb-3" aria-hidden>
             <polyline points="0,0 0,56 56,56" fill="none" stroke="#ffffff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
@@ -17,19 +17,10 @@ export function SiteFooter() {
         </div>
 
         <div>
-          <p className="mb-4 text-[10px] uppercase tracking-wide text-bronze">Productos</p>
-          <FooterLink>Piso técnico</FooterLink>
-          <FooterLink>Alfombra modular</FooterLink>
-          <FooterLink>Vinílico LVT</FooterLink>
-          <FooterLink>Catálogo completo</FooterLink>
-        </div>
-
-        <div>
           <p className="mb-4 text-[10px] uppercase tracking-wide text-bronze">Empresa</p>
           <FooterLink>Nosotros</FooterLink>
           <FooterLink>Proyectos</FooterLink>
           <FooterLink>Showroom</FooterLink>
-          <FooterLink>Contacto</FooterLink>
         </div>
 
         <div>
@@ -37,7 +28,6 @@ export function SiteFooter() {
           <FooterLink>Buenos Aires, CABA</FooterLink>
           <FooterLink>info@miraia.com.ar</FooterLink>
           <FooterLink>WhatsApp comercial</FooterLink>
-          <FooterLink>LinkedIn</FooterLink>
         </div>
       </footer>
 

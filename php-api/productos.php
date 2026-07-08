@@ -1,8 +1,7 @@
 <?php
 /**
  * GET /api/productos.php
- * Endpoint PÚBLICO de solo lectura — catálogo de exhibición (sin precios).
- * Soporta filtro opcional ?catalogo=<slug> para filtrar por catálogo.
+ * Endpoint PÚBLICO de solo lectura — productos de exhibición (sin precios).
  * No requiere autenticación.
  */
 require_once __DIR__ . '/config.php';
@@ -13,12 +12,4 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'GET') {
     Response::error('Método no permitido.', 405);
 }
 
-$catalogoSlug = $_GET['catalogo'] ?? null;
-
-if ($catalogoSlug !== null) {
-    $productos = Productos::listarPorCatalogo($catalogoSlug, soloActivos: true);
-} else {
-    $productos = Productos::listar(soloActivos: true);
-}
-
-Response::ok($productos);
+Response::ok(Productos::listar(soloActivos: true));

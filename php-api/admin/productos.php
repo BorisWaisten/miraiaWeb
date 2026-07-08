@@ -3,9 +3,8 @@
  * GET  /api/admin/productos.php  → listado completo (incluye inactivos), protegido
  * POST /api/admin/productos.php  → crear producto
  *   multipart/form-data:
- *     nombre, catalogoId, descripcionCorta, descripcionLarga?,
- *     especificaciones? (JSON string), destacado?, activo?, orden?,
- *     imagen_1? (File — principal), imagen_2? (File), imagen_3? (File)
+ *     nombre, subtitulo?, descripcionCorta?, descripcionLarga?, destacado?, activo?, orden?,
+ *     imagen_1? (File — principal), galeria[]? (Files — galería)
  */
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../lib/Response.php';

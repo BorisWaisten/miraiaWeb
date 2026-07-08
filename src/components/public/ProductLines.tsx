@@ -6,16 +6,16 @@ interface Props {
 }
 
 /**
- * Sección "Líneas de producto" — grid de 3 cards con separadores de 1px.
- * SIN precios: solo catálogo, nombre y descripción corta.
+ * Sección "Series" — grid de 3 cards con separadores de 1px.
+ * SIN precios ni descripciones: imagen principal + nombre.
  */
 export function ProductLines({ productos }: Props) {
   return (
     <section className="px-8 py-16 md:px-12">
       <div className="mb-12 flex items-end justify-between">
-        <h2 className="font-serif text-2xl font-medium text-white md:text-[28px]">Líneas de producto</h2>
+        <h2 className="font-serif text-2xl font-medium text-white md:text-[28px]">Series</h2>
         <Link href="/productos/" className="text-[11px] uppercase tracking-wide text-bronze">
-          Ver catálogo completo →
+          Ver todos los productos →
         </Link>
       </div>
 
@@ -42,11 +42,7 @@ export function ProductLines({ productos }: Props) {
               )}
             </div>
             <div className="px-6 py-5">
-              <p className="mb-2 text-[10px] uppercase tracking-wide text-bronze">
-                {producto.catalogoNombre}
-              </p>
-              <p className="mb-1.5 font-serif text-base text-white">{producto.nombre}</p>
-              <p className="text-xs leading-relaxed text-graphite-muted">{producto.descripcionCorta}</p>
+              <p className="font-serif text-base text-white">{producto.nombre}</p>
             </div>
           </Link>
         ))}

@@ -8,9 +8,8 @@ import type { Producto } from '@/models/producto';
 
 /**
  * Edición de producto vía /admin/productos/editar/?id=... (query param, no
- * segmento dinámico): igual que en /productos/ver/, evita depender de
- * generateStaticParams en una build estática donde los productos se crean
- * después del build, desde este mismo panel.
+ * segmento dinámico): evita depender de generateStaticParams en una build
+ * estática donde los productos se crean después del build, desde este panel.
  */
 export default function EditarProductoPage() {
   const [id, setId] = useState<number | null>(null);

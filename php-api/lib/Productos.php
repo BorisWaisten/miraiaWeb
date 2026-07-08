@@ -5,22 +5,12 @@ require_once __DIR__ . '/Database.php';
 
 /**
  * Capa de acceso a datos para `productos`.
- * Desde la migración 001, la columna `categoria` (ENUM) fue reemplazada por
- * `catalogo_id` (FK → catalogos.id). Todas las queries hacen JOIN con catalogos
- * para devolver `catalogoId`, `catalogoSlug` y `catalogoNombre` en cada producto.
- * El campo `imagenes_galeria` (JSON) almacena hasta 2 rutas adicionales (imágenes 2 y 3).
+ * Un producto es una serie: nombre + subtítulo + descripciones + imagen
+ * principal + galería de imágenes (variantes). Sin catálogos (migración 003);
+ * los textos volvieron en la migración 004.
  */
 final class Productos
 {
-    /** Base SELECT reutilizable — siempre incluye datos del catálogo asociado. */
-    private const SQL_SELECT = '
-        SELECT p.*,
-               c.slug  AS catalogo_slug,
-               c.nombre AS catalogo_nombre
-        FROM productos p
-        JOIN catalogos c ON c.id = p.catalogo_id
-    ';
-
     /** Convierte una fila cruda de MySQL (snake_case) a camelCase para el frontend. */
     public static function mapRow(array $fila): array
     {
@@ -34,12 +24,9 @@ final class Productos
             'id'              => (int) $fila['id'],
             'slug'            => $fila['slug'],
             'nombre'          => $fila['nombre'],
-            'catalogoId'      => (int) $fila['catalogo_id'],
-            'catalogoSlug'    => $fila['catalogo_slug'],
-            'catalogoNombre'  => $fila['catalogo_nombre'],
+            'subtitulo'       => $fila['subtitulo'],
             'descripcionCorta'=> $fila['descripcion_corta'],
             'descripcionLarga'=> $fila['descripcion_larga'],
-            'especificaciones'=> $fila['especificaciones'] ? json_decode($fila['especificaciones'], true) : null,
             'imagenPrincipal' => $fila['imagen_principal'],
             'imagenesGaleria' => $galeria,
             'destacado'       => (bool) $fila['destacado'],
@@ -52,23 +39,14 @@ final class Productos
 
     public static function listar(bool $soloActivos): array
     {
-        $where = $soloActivos ? 'WHERE p.activo = 1' : '';
-        $sql   = self::SQL_SELECT . $where . ' ORDER BY p.orden ASC, p.created_at DESC';
+        $where = $soloActivos ? 'WHERE activo = 1' : '';
+        $sql   = "SELECT * FROM productos {$where} ORDER BY orden ASC, created_at DESC";
         return array_map(self::mapRow(...), Database::get()->query($sql)->fetchAll());
-    }
-
-    public static function listarPorCatalogo(string $catalogoSlug, bool $soloActivos = true): array
-    {
-        $where = $soloActivos ? 'WHERE p.activo = 1 AND c.slug = ?' : 'WHERE c.slug = ?';
-        $sql   = self::SQL_SELECT . $where . ' ORDER BY p.orden ASC, p.created_at DESC';
-        $stmt  = Database::get()->prepare($sql);
-        $stmt->execute([$catalogoSlug]);
-        return array_map(self::mapRow(...), $stmt->fetchAll());
     }
 
     public static function obtenerPorSlug(string $slug): ?array
     {
-        $stmt = Database::get()->prepare(self::SQL_SELECT . 'WHERE p.slug = ? LIMIT 1');
+        $stmt = Database::get()->prepare('SELECT * FROM productos WHERE slug = ? LIMIT 1');
         $stmt->execute([$slug]);
         $fila = $stmt->fetch();
         return $fila ? self::mapRow($fila) : null;
@@ -76,7 +54,7 @@ final class Productos
 
     public static function obtenerPorId(int $id): ?array
     {
-        $stmt = Database::get()->prepare(self::SQL_SELECT . 'WHERE p.id = ? LIMIT 1');
+        $stmt = Database::get()->prepare('SELECT * FROM productos WHERE id = ? LIMIT 1');
         $stmt->execute([$id]);
         $fila = $stmt->fetch();
         return $fila ? self::mapRow($fila) : null;
@@ -112,33 +90,30 @@ final class Productos
     // ── CRUD ─────────────────────────────────────────────────────────────────
 
     /**
-     * @param array       $datos           nombre, catalogoId, descripcionCorta, descripcionLarga?,
-     *                                     especificaciones?, destacado?, activo?, orden?
-     * @param string|null $imagenPrincipal ruta pública de imagen 1 (o null)
-     * @param array       $imagenesGaleria rutas públicas de imágenes 2 y 3 (array, puede estar vacío)
+     * @param array       $datos           nombre, subtitulo?, descripcionCorta?,
+     *                                     descripcionLarga?, destacado?, activo?, orden?
+     * @param string|null $imagenPrincipal ruta pública de la imagen principal (o null)
+     * @param array       $imagenesGaleria rutas públicas de la galería
      */
     public static function crear(array $datos, ?string $imagenPrincipal, array $imagenesGaleria = []): array
     {
         $db   = Database::get();
         $slug = self::generarSlugUnico($datos['nombre']);
 
-        $galeriaJson = count($imagenesGaleria) > 0 ? json_encode(array_values($imagenesGaleria)) : null;
-
         $stmt = $db->prepare(
             'INSERT INTO productos
-                (slug, nombre, catalogo_id, descripcion_corta, descripcion_larga, especificaciones,
+                (slug, nombre, subtitulo, descripcion_corta, descripcion_larga,
                  imagen_principal, imagenes_galeria, destacado, activo, orden)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->execute([
             $slug,
             $datos['nombre'],
-            (int) $datos['catalogoId'],
-            $datos['descripcionCorta'],
+            $datos['subtitulo'] ?? null,
+            $datos['descripcionCorta'] ?? null,
             $datos['descripcionLarga'] ?? null,
-            isset($datos['especificaciones']) ? json_encode($datos['especificaciones']) : null,
             $imagenPrincipal,
-            $galeriaJson,
+            count($imagenesGaleria) > 0 ? json_encode(array_values($imagenesGaleria)) : null,
             !empty($datos['destacado']) ? 1 : 0,
             isset($datos['activo']) ? (int) (bool) $datos['activo'] : 1,
             (int) ($datos['orden'] ?? 0),
@@ -148,10 +123,8 @@ final class Productos
     }
 
     /**
-     * @param int         $id
-     * @param array       $datos
      * @param string|null $nuevaImagen          ruta de imagen principal nueva (null = sin cambio o borrar)
-     * @param array|null  $nuevaGaleria          array actualizado para galería (null = sin cambio)
+     * @param array|null  $nuevaGaleria         galería final (null = sin cambio)
      * @param bool        $borrarImagenPrincipal true = limpiar imagen_principal aunque no haya nueva
      */
     public static function actualizar(
@@ -172,33 +145,23 @@ final class Productos
         // Imagen principal: nueva > borrar > mantener existente
         $imagenFinal = $nuevaImagen ?? ($borrarImagenPrincipal ? null : $actual['imagenPrincipal']);
 
-        // Galería: si se pasa $nuevaGaleria (puede ser array vacío), se usa; si null, mantener existente
-        if ($nuevaGaleria !== null) {
-            $galeriaJson = count($nuevaGaleria) > 0 ? json_encode(array_values($nuevaGaleria)) : null;
-        } else {
-            $galeriaJson = count($actual['imagenesGaleria']) > 0
-                ? json_encode($actual['imagenesGaleria'])
-                : null;
-        }
+        $galeria = $nuevaGaleria ?? $actual['imagenesGaleria'];
 
         $stmt = Database::get()->prepare(
             'UPDATE productos SET
-                slug = ?, nombre = ?, catalogo_id = ?, descripcion_corta = ?, descripcion_larga = ?,
-                especificaciones = ?, imagen_principal = ?,
-                imagenes_galeria = ?, destacado = ?, activo = ?, orden = ?
+                slug = ?, nombre = ?, subtitulo = ?, descripcion_corta = ?,
+                descripcion_larga = ?, imagen_principal = ?, imagenes_galeria = ?,
+                destacado = ?, activo = ?, orden = ?
              WHERE id = ?'
         );
         $stmt->execute([
             $slug,
             $nombre,
-            isset($datos['catalogoId']) ? (int) $datos['catalogoId'] : $actual['catalogoId'],
-            $datos['descripcionCorta'] ?? $actual['descripcionCorta'],
-            $datos['descripcionLarga'] ?? $actual['descripcionLarga'],
-            isset($datos['especificaciones'])
-                ? json_encode($datos['especificaciones'])
-                : ($actual['especificaciones'] ? json_encode($actual['especificaciones']) : null),
+            array_key_exists('subtitulo', $datos) ? $datos['subtitulo'] : $actual['subtitulo'],
+            array_key_exists('descripcionCorta', $datos) ? $datos['descripcionCorta'] : $actual['descripcionCorta'],
+            array_key_exists('descripcionLarga', $datos) ? $datos['descripcionLarga'] : $actual['descripcionLarga'],
             $imagenFinal,
-            $galeriaJson,
+            count($galeria) > 0 ? json_encode(array_values($galeria)) : null,
             isset($datos['destacado']) ? (int) (bool) $datos['destacado'] : (int) $actual['destacado'],
             isset($datos['activo']) ? (int) (bool) $datos['activo'] : (int) $actual['activo'],
             (int) ($datos['orden'] ?? $actual['orden']),
