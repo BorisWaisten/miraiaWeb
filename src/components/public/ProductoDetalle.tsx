@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { obtenerImagenesVariante } from '@/lib/api';
+import { obtenerImagenesVariante, urlArchivo } from '@/lib/api';
 import { LINEAS, parseEspecificaciones, type Producto } from '@/models/producto';
 import type { Variante } from '@/models/variante';
 
@@ -58,7 +58,7 @@ export function ProductoDetalle({ producto }: { producto: Producto }) {
                 {producto.certificados.map((cert) => (
                   <li key={cert.ruta}>
                     <a
-                      href={cert.ruta}
+                      href={urlArchivo(cert.ruta)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-sm text-bronze underline-offset-4 hover:underline"

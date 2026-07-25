@@ -95,6 +95,22 @@ export async function apiDelete<T>(path: string): Promise<ApiResult<T>> {
 }
 
 /**
+ * URL absoluta de un archivo subido (hoy solo certificados PDF). En la base se
+ * guardan como ruta relativa al host de la API (`/uploads/productos/x.pdf`),
+ * formato que alcanzaba cuando el front y la API compartían dominio. Con el
+ * front en Vercel esa ruta apuntaría al dominio del front —donde no existe—
+ * así que hay que resolverla contra el origen de la API.
+ */
+export function urlArchivo(ruta: string): string {
+  // Ya absoluta (o API en el mismo origen, como en dev y en el export estático):
+  // la ruta tal cual ya resuelve bien.
+  if (/^https?:\/\//i.test(ruta) || !/^https?:\/\//i.test(API_BASE_URL)) {
+    return ruta;
+  }
+  return new URL(ruta, API_BASE_URL).href;
+}
+
+/**
  * Imágenes de una variante de producto (migración 007), resueltas en runtime
  * contra Cloudinary por el backend (php-api/variante-imagenes.php) a partir
  * del slug de categoría + slug de variante.

@@ -84,9 +84,19 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
 // diferencia de un fetch/XHR con JSON, un <form> multipart no dispara
 // preflight de CORS. Mitigación: en métodos que mutan estado, si el browser
 // mandó Origin (que es el caso normal en fetch/XHR y en POST cross-site de
-// browsers modernos) tiene que estar en la misma whitelist de CORS.
+// browsers modernos) tiene que ser el propio host o estar en la whitelist.
+//
+// El same-origin se acepta SIEMPRE, sin depender de CORS_ALLOWED_ORIGINS: un
+// POST cuyo Origin es este mismo host viene de una página nuestra, nunca de un
+// sitio de terceros. Atarlo a la whitelist dejaba afuera al propio sitio
+// (contacto y login devolvían 403 cuando la whitelist solo tenía el dominio
+// del front nuevo).
 $metodoRequest = $_SERVER['REQUEST_METHOD'] ?? '';
-if (in_array($metodoRequest, ['POST', 'PUT', 'DELETE'], true) && $origenRequest !== '' && !in_array($origenRequest, $origenesPermitidos, true)) {
+$hostRequest = $_SERVER['HTTP_HOST'] ?? '';
+$origenEsPropio = $origenRequest !== '' && $hostRequest !== ''
+    && strcasecmp((string) parse_url($origenRequest, PHP_URL_HOST), $hostRequest) === 0;
+
+if (in_array($metodoRequest, ['POST', 'PUT', 'DELETE'], true) && $origenRequest !== '' && !$origenEsPropio && !in_array($origenRequest, $origenesPermitidos, true)) {
     http_response_code(403);
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode(['error' => 'Origen no permitido.']);
