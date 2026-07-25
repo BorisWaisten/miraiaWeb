@@ -1,19 +1,30 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState, type FormEvent } from 'react';
-import { apiSendForm } from '@/lib/api';
+import { useEffect, useState, type FormEvent } from 'react';
+import { apiSendForm, apiSendJson, apiDelete, apiGet, obtenerImagenesVariante } from '@/lib/api';
+import { slugify } from '@/lib/slug';
 import type { Producto } from '@/models/producto';
+import type { Categoria } from '@/models/categoria';
 
 interface Props {
   producto?: Producto; // si viene, el form opera en modo "editar"
 }
 
+interface VarianteForm {
+  id?: number; // presente = variante existente; ausente = nueva
+  nombre: string;
+}
+
 /**
  * Formulario de alta/edición de producto (serie).
- * — Nombre, subtítulo, descripciones + imagen principal + galería de N imágenes.
- * — En edición: `galeria_conservar` (JSON) indica qué imágenes existentes
- *   se mantienen; los archivos nuevos van en `galeria[]` y se agregan.
+ * — Nombre, categoría, subtítulo, descripciones.
+ * — Variantes de color: solo nombre (el slug se autogenera). Sin upload de
+ *   imágenes en ningún lado del form (migración 008) — el cliente las sube
+ *   directo a Cloudinary bajo miraia/productos/{categoria.slug}/{variante.slug}/,
+ *   y el slug de la variante debe coincidir con esa carpeta. La "imagen
+ *   principal" que se ve en listados es automáticamente la primera imagen
+ *   de la primera variante — no hay nada que subir ni elegir acá.
  */
 export function ProductForm({ producto }: Props) {
   const router = useRouter();
@@ -21,19 +32,48 @@ export function ProductForm({ producto }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // — Imagen principal —
-  const [previewPrincipal, setPreviewPrincipal] = useState<string | null>(
-    producto?.imagenPrincipal ?? null,
+  // — Categorías —
+  // Select CONTROLADO a propósito: las opciones llegan async (useEffect de
+  // abajo) y con `defaultValue` React no vuelve a aplicar la selección
+  // guardada una vez que las <option> aparecen — el dropdown queda pegado en
+  // "Sin categoría" aunque el producto sí tenga una, y al guardar la pisa a
+  // NULL. Con `value` controlado no importa cuándo llegan las opciones.
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [categoriaId, setCategoriaId] = useState(
+    producto?.categoriaId != null ? String(producto.categoriaId) : '',
   );
-  const [borrarPrincipal, setBorrarPrincipal] = useState(false);
+  useEffect(() => {
+    apiGet<Categoria[]>('/admin/categorias.php').then((res) => setCategorias(res.data ?? []));
+  }, []);
+  const categoriaSlug = categorias.find((c) => String(c.id) === categoriaId)?.slug ?? null;
 
-  // — Galería: rutas existentes conservadas + archivos nuevos —
-  // La URL de preview se crea UNA vez al seleccionar el archivo; crearla en
-  // cada render genera blobs nuevos por imagen y rompe el preview múltiple.
-  const [galeriaExistente, setGaleriaExistente] = useState<string[]>(
-    producto?.imagenesGaleria ?? [],
+  // — Variantes de color: solo nombre, slug lo genera el backend —
+  const [variantes, setVariantes] = useState<VarianteForm[]>(
+    producto?.variantes?.map((v) => ({ id: v.id, nombre: v.nombre })) ?? [],
   );
-  const [galeriaNueva, setGaleriaNueva] = useState<{ file: File; url: string }[]>([]);
+
+  // — Certificados PDF: existentes conservados + archivos nuevos —
+  const [certExistentes, setCertExistentes] = useState(producto?.certificados ?? []);
+  const [certNuevos, setCertNuevos] = useState<File[]>([]);
+
+  /** Crea/actualiza/borra variantes vía sus endpoints CRUD para reflejar el estado local. */
+  async function sincronizarVariantes(productoId: number) {
+    const originales = producto?.variantes ?? [];
+    const idsActuales = new Set(variantes.filter((v) => v.id).map((v) => v.id));
+    const eliminadas = originales.filter((v) => !idsActuales.has(v.id));
+
+    await Promise.all([
+      ...eliminadas.map((v) => apiDelete(`/admin/variante.php?id=${v.id}`)),
+      ...variantes.map((v) => {
+        if (v.id) {
+          const original = originales.find((o) => o.id === v.id);
+          if (original && original.nombre === v.nombre) return Promise.resolve();
+          return apiSendJson(`/admin/variante.php?id=${v.id}`, { nombre: v.nombre });
+        }
+        return apiSendJson('/admin/variantes.php', { productoId, nombre: v.nombre });
+      }),
+    ]);
+  }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -42,18 +82,21 @@ export function ProductForm({ producto }: Props) {
 
     const formData = new FormData(e.currentTarget);
 
-    if (borrarPrincipal) formData.set('borrar_imagen_1', '1');
-    if (esEdicion) formData.set('galeria_conservar', JSON.stringify(galeriaExistente));
-    for (const { file } of galeriaNueva) formData.append('galeria[]', file);
+    if (esEdicion) {
+      formData.set('certificados_conservar', JSON.stringify(certExistentes.map((c) => c.ruta)));
+    }
+    for (const file of certNuevos) formData.append('certificados[]', file);
 
     const path = esEdicion ? `/admin/producto.php?id=${producto!.id}` : '/admin/productos.php';
-    const res = await apiSendForm(path, formData, 'POST');
+    const res = await apiSendForm<Producto>(path, formData, 'POST');
 
-    if (!res.ok) {
+    if (!res.ok || !res.data) {
       setError(res.error ?? 'No se pudo guardar el producto.');
       setLoading(false);
       return;
     }
+
+    await sincronizarVariantes(res.data.id);
 
     router.push('/admin/productos/');
   }
@@ -68,6 +111,31 @@ export function ProductForm({ producto }: Props) {
           defaultValue={producto?.nombre}
           className="w-full border border-graphite-border bg-transparent px-4 py-2.5 text-sm text-white outline-none focus:border-bronze"
         />
+      </Field>
+
+      <Field label="Línea de producto">
+        <select
+          name="linea"
+          defaultValue={producto?.linea ?? 'alfombra-modular'}
+          className="w-full border border-graphite-border bg-graphite px-4 py-2.5 text-sm text-white outline-none focus:border-bronze"
+        >
+          <option value="alfombra-modular">Alfombra Modular</option>
+          <option value="piso-tecnico">Piso Técnico</option>
+        </select>
+      </Field>
+
+      <Field label="Categoría (opcional)">
+        <select
+          name="categoriaId"
+          value={categoriaId}
+          onChange={(e) => setCategoriaId(e.target.value)}
+          className="w-full border border-graphite-border bg-graphite px-4 py-2.5 text-sm text-white outline-none focus:border-bronze"
+        >
+          <option value="">Sin categoría</option>
+          {categorias.map((c) => (
+            <option key={c.id} value={c.id}>{c.nombre}</option>
+          ))}
+        </select>
       </Field>
 
       <Field label="Subtítulo (opcional)">
@@ -99,78 +167,123 @@ export function ProductForm({ producto }: Props) {
         />
       </Field>
 
-      {/* Imagen principal */}
-      <div>
-        <p className="mb-3 text-[11px] uppercase tracking-wide text-graphite-muted">
-          Imagen principal
-        </p>
-        <div className="w-40">
-          <Thumb
-            src={previewPrincipal}
-            onBorrar={() => {
-              setPreviewPrincipal(null);
-              setBorrarPrincipal(true);
-            }}
-          />
-          <label className="mt-2 block cursor-pointer border border-graphite-border px-3 py-1.5 text-center text-[10px] uppercase tracking-wide text-graphite-muted hover:border-bronze hover:text-bronze">
-            {previewPrincipal ? 'Reemplazar' : 'Subir imagen'}
-            <input
-              name="imagen_1"
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/avif"
-              className="sr-only"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                setPreviewPrincipal(URL.createObjectURL(file));
-                setBorrarPrincipal(false);
-              }}
-            />
-          </label>
-        </div>
-      </div>
+      <Field label={'Especificaciones técnicas (opcional — una "Clave: Valor" por línea, se muestran como tabla)'}>
+        <textarea
+          name="especificaciones"
+          rows={8}
+          maxLength={5000}
+          defaultValue={producto?.especificaciones ?? ''}
+          placeholder={'Construcción: Level Loop\nMaterial: Polipropileno (PP)\nMedidas: 50 × 50 cm'}
+          className="w-full border border-graphite-border bg-transparent px-4 py-2.5 font-mono text-sm text-white placeholder-graphite-muted outline-none focus:border-bronze"
+        />
+      </Field>
 
-      {/* Galería */}
+      {/* Certificados PDF */}
       <div>
         <p className="mb-3 text-[11px] uppercase tracking-wide text-graphite-muted">
-          Galería (variantes de la serie)
+          Certificados (PDF)
         </p>
-        <div className="grid grid-cols-3 gap-4 sm:grid-cols-4">
-          {galeriaExistente.map((ruta) => (
-            <Thumb
-              key={ruta}
-              src={ruta}
-              onBorrar={() => setGaleriaExistente((prev) => prev.filter((r) => r !== ruta))}
-            />
+        <ul className="space-y-1.5">
+          {certExistentes.map((cert) => (
+            <li key={cert.ruta} className="flex items-center gap-3 text-sm text-white">
+              {cert.nombre}
+              <button
+                type="button"
+                onClick={() => setCertExistentes((prev) => prev.filter((c) => c.ruta !== cert.ruta))}
+                className="text-xs text-graphite-muted hover:text-red-400"
+                title="Quitar certificado"
+              >
+                ✕
+              </button>
+            </li>
           ))}
-          {galeriaNueva.map((item) => (
-            <Thumb
-              key={item.url}
-              src={item.url}
-              onBorrar={() => {
-                URL.revokeObjectURL(item.url);
-                setGaleriaNueva((prev) => prev.filter((x) => x.url !== item.url));
-              }}
-            />
+          {certNuevos.map((file, i) => (
+            <li key={`${file.name}-${i}`} className="flex items-center gap-3 text-sm text-mist/80">
+              {file.name} (nuevo)
+              <button
+                type="button"
+                onClick={() => setCertNuevos((prev) => prev.filter((_, j) => j !== i))}
+                className="text-xs text-graphite-muted hover:text-red-400"
+                title="Quitar certificado"
+              >
+                ✕
+              </button>
+            </li>
           ))}
-        </div>
+        </ul>
         <label className="mt-3 inline-block cursor-pointer border border-graphite-border px-3 py-1.5 text-[10px] uppercase tracking-wide text-graphite-muted hover:border-bronze hover:text-bronze">
-          Agregar imágenes
+          Agregar PDFs
           <input
             type="file"
             multiple
-            accept="image/jpeg,image/png,image/webp,image/avif"
+            accept="application/pdf"
             className="sr-only"
             onChange={(e) => {
-              const nuevos = Array.from(e.target.files ?? []).map((file) => ({
-                file,
-                url: URL.createObjectURL(file),
-              }));
-              setGaleriaNueva((prev) => [...prev, ...nuevos]);
+              setCertNuevos((prev) => [...prev, ...Array.from(e.target.files ?? [])]);
               e.target.value = '';
             }}
           />
         </label>
+      </div>
+
+      {/* Variantes de color */}
+      <div>
+        <p className="mb-1.5 text-[11px] uppercase tracking-wide text-graphite-muted">
+          Variantes de color
+        </p>
+        <p className="mb-3 text-xs text-graphite-muted">
+          El slug generado debe coincidir con la carpeta que el cliente ya creó en Cloudinary
+          (miraia/productos/&lt;categoría&gt;/&lt;variante&gt;/). Las imágenes no se suben acá.
+        </p>
+        <div className="space-y-4">
+          {variantes.map((v, i) => {
+            // Slug real ya guardado si la variante existe; si es nueva o se
+            // editó el nombre, se usa el preview client-side (mismo algoritmo
+            // que el backend, salvo colisión de sufijo).
+            const original = producto?.variantes?.find((o) => o.id === v.id);
+            const varianteSlug = original?.nombre === v.nombre ? original.slug : (v.nombre.trim() ? slugify(v.nombre) : null);
+
+            return (
+              <div key={v.id ?? `nueva-${i}`} className="border border-graphite-border p-3">
+                <div className="flex items-center gap-3">
+                  <input
+                    value={v.nombre}
+                    onChange={(e) => {
+                      const nombre = e.target.value;
+                      setVariantes((prev) => prev.map((x, j) => (j === i ? { ...x, nombre } : x)));
+                    }}
+                    required
+                    minLength={1}
+                    maxLength={160}
+                    placeholder="Ej. Rubí"
+                    className="flex-1 border border-graphite-border bg-transparent px-4 py-2 text-sm text-white outline-none focus:border-bronze"
+                  />
+                  {varianteSlug && (
+                    <span className="w-32 shrink-0 text-[11px] text-graphite-muted">{varianteSlug}</span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setVariantes((prev) => prev.filter((_, j) => j !== i))}
+                    className="text-xs text-graphite-muted hover:text-red-400"
+                    title="Quitar variante"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="mt-3">
+                  <VarianteImagenesPreview categoriaSlug={categoriaSlug} varianteSlug={varianteSlug} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <button
+          type="button"
+          onClick={() => setVariantes((prev) => [...prev, { nombre: '' }])}
+          className="mt-3 inline-block cursor-pointer border border-graphite-border px-3 py-1.5 text-[10px] uppercase tracking-wide text-graphite-muted hover:border-bronze hover:text-bronze"
+        >
+          + Agregar variante
+        </button>
       </div>
 
       <div className="flex gap-6">
@@ -207,27 +320,69 @@ export function ProductForm({ producto }: Props) {
 
 // ── Subcomponentes ────────────────────────────────────────────────────────────
 
-function Thumb({ src, onBorrar }: { src: string | null; onBorrar: () => void }) {
+/**
+ * Portada + galería en miniatura de una variante, resueltas en vivo contra
+ * Cloudinary (categoria.slug + variante.slug). Cada variante tiene sus
+ * propias imágenes — esto es solo lectura, para que el admin confirme que
+ * la carpeta de Cloudinary ya tiene fotos antes de guardar.
+ */
+function VarianteImagenesPreview({
+  categoriaSlug,
+  varianteSlug,
+}: {
+  categoriaSlug: string | null;
+  varianteSlug: string | null;
+}) {
+  const [imagenes, setImagenes] = useState<string[] | null>(null);
+  const [cargando, setCargando] = useState(false);
+
+  useEffect(() => {
+    if (!categoriaSlug || !varianteSlug) {
+      setImagenes(null);
+      return;
+    }
+    let cancelado = false;
+    setCargando(true);
+    obtenerImagenesVariante(categoriaSlug, varianteSlug).then((res) => {
+      if (cancelado) return;
+      setImagenes(res.data ?? []);
+      setCargando(false);
+    });
+    return () => {
+      cancelado = true;
+    };
+  }, [categoriaSlug, varianteSlug]);
+
+  if (!categoriaSlug) {
+    return <p className="text-[11px] text-graphite-muted">Elegí una categoría arriba para ver las imágenes de esta variante.</p>;
+  }
+  if (!varianteSlug) {
+    return null;
+  }
+  if (cargando) {
+    return <p className="text-[11px] text-graphite-muted">Buscando imágenes en Cloudinary…</p>;
+  }
+  if (!imagenes || imagenes.length === 0) {
+    return (
+      <p className="text-[11px] text-graphite-muted">
+        Sin imágenes en Cloudinary todavía — subilas a miraia/productos/{categoriaSlug}/{varianteSlug}/
+      </p>
+    );
+  }
+
   return (
-    <div className="relative h-32 border border-dashed border-graphite-border bg-graphite-tile">
-      {src ? (
-        <>
+    <div className="flex flex-wrap items-center gap-2">
+      {imagenes.map((src, i) => (
+        <div key={src} className="relative h-14 w-14 shrink-0 overflow-hidden border border-graphite-border bg-graphite-tile">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={src} alt="" className="h-full w-full object-cover" />
-          <button
-            type="button"
-            onClick={onBorrar}
-            className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center bg-black/70 text-xs text-white hover:bg-red-600"
-            title="Eliminar imagen"
-          >
-            ×
-          </button>
-        </>
-      ) : (
-        <div className="flex h-full items-center justify-center text-xs text-graphite-muted">
-          Sin imagen
+          {i === 0 && (
+            <span className="absolute bottom-0 left-0 right-0 bg-black/70 py-0.5 text-center text-[8px] uppercase tracking-wide text-bronze">
+              Portada
+            </span>
+          )}
         </div>
-      )}
+      ))}
     </div>
   );
 }

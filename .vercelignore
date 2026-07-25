@@ -1,0 +1,6 @@
+# El backend PHP vive en SiteGround (FTP), no en Vercel — no hace falta
+# subirlo en el bundle del frontend.
+php-api/
+sql/
+tests/
+DEPLOY.md

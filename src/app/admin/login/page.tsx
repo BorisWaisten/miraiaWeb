@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { apiSendJson } from '@/lib/api';
+import { apiSendJson, invalidarSesionAdmin } from '@/lib/api';
 
 /** Login del panel de administración. Única página de /admin que no requiere sesión. */
 export default function AdminLoginPage() {
@@ -33,6 +33,7 @@ export default function AdminLoginPage() {
       return;
     }
 
+    invalidarSesionAdmin();
     router.push(destino);
   }
 

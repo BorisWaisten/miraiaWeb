@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { apiGet } from '@/lib/api';
+import { verificarSesionAdmin } from '@/lib/api';
 import { LogoutButton } from '@/components/admin/LogoutButton';
 
 /**
@@ -18,6 +18,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const [adminEmail, setAdminEmail] = useState<string | null>(null);
   const [verificando, setVerificando] = useState(true);
+  const [menuAbierto, setMenuAbierto] = useState(false);
 
   const esLogin = pathname === '/admin/login' || pathname === '/admin/login/';
 
@@ -26,7 +27,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       setVerificando(false);
       return;
     }
-    apiGet<{ email: string }>('/admin/me.php').then((res) => {
+    verificarSesionAdmin().then((res) => {
       if (!res.ok || !res.data) {
         router.push(`/admin/login/?from=${encodeURIComponent(pathname)}`);
         return;
@@ -35,6 +36,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       setVerificando(false);
     });
   }, [esLogin, pathname, router]);
+
+  useEffect(() => {
+    setMenuAbierto(false);
+  }, [pathname]);
 
   if (esLogin) return <>{children}</>;
 
@@ -47,22 +52,42 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="flex min-h-screen bg-graphite">
-      <aside className="flex w-60 flex-col justify-between border-r border-graphite-border bg-obsidian px-6 py-8">
+    <div className="min-h-screen bg-graphite md:flex">
+      {/* Barra superior — solo mobile */}
+      <div className="flex items-center justify-between border-b border-graphite-border bg-obsidian px-6 py-4 md:hidden">
+        <p className="font-serif text-base tracking-widest2 text-white">MIRAIA · Admin</p>
+        <button
+          type="button"
+          onClick={() => setMenuAbierto((v) => !v)}
+          aria-label={menuAbierto ? 'Cerrar menú' : 'Abrir menú'}
+          aria-expanded={menuAbierto}
+          className="flex h-9 w-9 flex-col items-center justify-center gap-[5px]"
+        >
+          <span className={`block h-px w-6 bg-white transition-transform duration-200 ${menuAbierto ? 'translate-y-[6.5px] rotate-45' : ''}`} />
+          <span className={`block h-px w-6 bg-white transition-opacity duration-200 ${menuAbierto ? 'opacity-0' : ''}`} />
+          <span className={`block h-px w-6 bg-white transition-transform duration-200 ${menuAbierto ? '-translate-y-[6.5px] -rotate-45' : ''}`} />
+        </button>
+      </div>
+
+      <aside
+        className={`${menuAbierto ? 'flex' : 'hidden'} w-full flex-col justify-between border-b border-graphite-border bg-obsidian px-6 py-6 md:flex md:w-60 md:border-b-0 md:border-r md:py-8`}
+      >
         <div>
-          <p className="mb-10 font-serif text-base tracking-widest2 text-white">MIRAIA · Admin</p>
+          <p className="mb-10 hidden font-serif text-base tracking-widest2 text-white md:block">MIRAIA · Admin</p>
           <nav className="flex flex-col gap-1">
             <AdminNavLink href="/admin/">Resumen</AdminNavLink>
             <AdminNavLink href="/admin/productos/">Productos</AdminNavLink>
+            <AdminNavLink href="/admin/categorias/">Categorías</AdminNavLink>
+            <AdminNavLink href="/admin/blog/">Blog</AdminNavLink>
           </nav>
         </div>
-        <div>
+        <div className="mt-8 md:mt-0">
           <p className="mb-3 truncate text-[11px] text-graphite-muted">{adminEmail}</p>
           <LogoutButton />
         </div>
       </aside>
 
-      <main className="flex-1 px-10 py-10">{children}</main>
+      <main className="flex-1 px-5 py-8 md:px-10 md:py-10">{children}</main>
     </div>
   );
 }

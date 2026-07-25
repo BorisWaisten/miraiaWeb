@@ -36,7 +36,7 @@ final class Auth
             'path' => '/',
             'httponly' => true,
             'secure' => true, // el sitio corre sobre HTTPS (sg-host.com y dominio final)
-            'samesite' => 'Lax',
+            'samesite' => 'None', // frontend en Vercel, dominio distinto al de esta API
         ]);
     }
 
@@ -47,7 +47,7 @@ final class Auth
             'path' => '/',
             'httponly' => true,
             'secure' => true,
-            'samesite' => 'Lax',
+            'samesite' => 'None',
         ]);
     }
 

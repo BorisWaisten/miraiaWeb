@@ -30,8 +30,35 @@ async function parseResponse<T>(res: Response): Promise<ApiResult<T>> {
   return { ok: res.ok, status: res.status, data: body.data, error: body.error };
 }
 
+// ── Verificación de sesión admin con caché por pestaña ──
+// El layout de /admin se re-monta en cada navegación; sin caché, cada click
+// dispara un GET /admin/me.php. Con clicks rápidos eso acumula decenas de
+// requests simultáneos y en SiteGround se agota el límite de conexiones MySQL
+// (→ 500 "Error interno del servidor"). Acá se hace UNA sola llamada por
+// pestaña y las siguientes reutilizan la misma promesa. La protección real
+// sigue siendo server-side (Auth::requerirSesion en cada endpoint).
+let sesionAdminCache: Promise<ApiResult<{ email: string }>> | null = null;
+
+export function verificarSesionAdmin(): Promise<ApiResult<{ email: string }>> {
+  sesionAdminCache ??= apiGet<{ email: string }>('/admin/me.php').then((res) => {
+    if (!res.ok) sesionAdminCache = null; // no cachear fallos: reintenta en la próxima navegación
+    return res;
+  });
+  return sesionAdminCache;
+}
+
+/** Llamar al hacer login/logout para que la próxima navegación re-verifique. */
+export function invalidarSesionAdmin(): void {
+  sesionAdminCache = null;
+}
+
 export async function apiGet<T>(path: string): Promise<ApiResult<T>> {
-  const res = await fetch(`${API_BASE_URL}${path}`, { credentials: 'include' });
+  // Timestamp anti-caché: el caché dinámico de SiteGround indexa por URL y
+  // puede servir respuestas viejas de la API. Con esto cada GET la esquiva.
+  const sep = path.includes('?') ? '&' : '?';
+  const res = await fetch(`${API_BASE_URL}${path}${sep}_t=${Date.now()}`, {
+    credentials: 'include',
+  });
   return parseResponse<T>(res);
 }
 
@@ -65,4 +92,14 @@ export async function apiSendJson<T>(
 export async function apiDelete<T>(path: string): Promise<ApiResult<T>> {
   const res = await fetch(`${API_BASE_URL}${path}`, { method: 'DELETE', credentials: 'include' });
   return parseResponse<T>(res);
+}
+
+/**
+ * Imágenes de una variante de producto (migración 007), resueltas en runtime
+ * contra Cloudinary por el backend (php-api/variante-imagenes.php) a partir
+ * del slug de categoría + slug de variante.
+ */
+export function obtenerImagenesVariante(categoriaSlug: string, varianteSlug: string): Promise<ApiResult<string[]>> {
+  const qs = new URLSearchParams({ categoria: categoriaSlug, variante: varianteSlug });
+  return apiGet<string[]>(`/variante-imagenes.php?${qs.toString()}`);
 }

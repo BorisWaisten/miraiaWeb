@@ -1,0 +1,58 @@
+# SEO técnico MIRAIA — este archivo se copia a /out en el build y va a la
+# raíz de public_html. Si ya existe un .htaccess en el servidor, MERGEAR.
+
+# ── Cache-Control explícito ──────────────────────────────────────────────────
+# Sin esto, el Dynamic Cache de SiteGround decide por su cuenta cómo cachear
+# cada archivo. Cada `npm run export` genera JS/CSS con un hash nuevo en el
+# nombre (_next/static/chunks/<hash>.js) y el deploy por FTP borra los
+# archivos viejos — si SiteGround sigue sirviendo una copia cacheada del HTML
+# que todavía apunta a un hash viejo ya borrado, ese JS da 404 y la página
+# no puede terminar de cargar en el navegador del visitante ("This page
+# couldn't load"). Con estas reglas: el HTML nunca se cachea (siempre pide la
+# versión actual), y los assets con hash sí se cachean agresivo porque un
+# hash nuevo = URL nueva, nunca hay conflicto.
+<IfModule mod_headers.c>
+  <FilesMatch "\.html$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+  <FilesMatch "\.(js|css|woff2?)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+</IfModule>
+
+RewriteEngine On
+
+# Ítem 05: HTTP → HTTPS con 301
+RewriteCond %{HTTPS} off
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+# Ítem 08: 301 de las URLs viejas /productos/ver/?slug=X → /alfombras-modulares/X/
+# (THE_REQUEST evita loops con el rewrite interno de abajo)
+RewriteCond %{THE_REQUEST} \s/productos/ver/?\?slug=([^&\s]+)
+RewriteRule ^productos/ver/?$ /alfombras-modulares/%1/ [R=301,L,QSD]
+
+# Fallback: producto creado después del último build (no existe la carpeta
+# estática) → se sirve el detalle client-side, que lee el slug del pathname.
+# La segunda regla cubre el payload RSC (index.txt) que pide el router de
+# Next en la navegación client-side — sin ella, clickear un producto sin
+# página estática tira "Connection closed" en consola.
+RewriteCond %{DOCUMENT_ROOT}/$1/$2 !-d
+RewriteRule ^(alfombras-modulares|pisos-tecnicos)/([^/]+)/?$ /productos/ver/index.html [L]
+
+RewriteCond %{DOCUMENT_ROOT}/$1/$2 !-d
+RewriteRule ^(alfombras-modulares|pisos-tecnicos)/([^/]+)/index\.txt$ /productos/ver/index.txt [L]
+
+# Next 16 ya no pide index.txt: pide varios payloads __next.*.txt por segmento.
+# Mismo fallback, preservando el nombre de archivo pedido.
+RewriteCond %{DOCUMENT_ROOT}/$1/$2 !-d
+RewriteRule ^(alfombras-modulares|pisos-tecnicos)/([^/]+)/(__next\.[^/]+\.txt)$ /productos/ver/$3 [L]
+
+# Mismo fallback que arriba, para posteos de blog creados después del último build.
+RewriteCond %{DOCUMENT_ROOT}/blog/$1 !-d
+RewriteRule ^blog/([^/]+)/?$ /blog/ver/index.html [L]
+
+RewriteCond %{DOCUMENT_ROOT}/blog/$1 !-d
+RewriteRule ^blog/([^/]+)/index\.txt$ /blog/ver/index.txt [L]
+
+RewriteCond %{DOCUMENT_ROOT}/blog/$1 !-d
+RewriteRule ^blog/([^/]+)/(__next\.[^/]+\.txt)$ /blog/ver/$2 [L]

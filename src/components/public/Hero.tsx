@@ -38,10 +38,10 @@ export function Hero({ productos = [] }: Props) {
   ];
 
   return (
-    <div className="grid h-[560px] grid-cols-1 md:grid-cols-2">
+    <div className="grid grid-cols-1 md:h-[560px] md:grid-cols-2">
 
       {/* ── Izquierda ── */}
-      <div className="flex h-full flex-col justify-between border-b border-graphite-border px-8 py-16 md:border-b-0 md:border-r md:px-12">
+      <div className="flex flex-col justify-between border-b border-graphite-border px-8 py-16 md:h-full md:border-b-0 md:border-r md:px-12">
         <div>
           <p className="mb-8 text-[10px] uppercase tracking-widest2 text-bronze">
             Piso técnico · Alfombra modular
@@ -67,10 +67,10 @@ export function Hero({ productos = [] }: Props) {
         </div>
       </div>
 
-      {/* ── Derecha: grid animado ── */}
+      {/* ── Derecha: grid animado — altura propia en mobile, no comparte la de la izquierda ── */}
       <div
         ref={panelRef}
-        className="relative h-full overflow-hidden"
+        className="relative h-[380px] overflow-hidden md:h-full"
         style={{ perspective: '1200px' }}
         onMouseMove={handleMouseMove}
         onMouseLeave={() => setTilt({ x: 0, y: 0 })}

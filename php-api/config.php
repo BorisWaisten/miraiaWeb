@@ -30,10 +30,11 @@ function miraia_cargar_env(string $ruta): void
         if (preg_match('/^"(.*)"$/', $valor, $m) || preg_match("/^'(.*)'$/", $valor, $m)) {
             $valor = $m[1];
         }
-        if (getenv($clave) === false) {
-            putenv("{$clave}={$valor}");
-            $_ENV[$clave] = $valor;
-        }
+        // Siempre pisa el valor: putenv() persiste por worker de PHP-FPM entre
+        // requests, así que si no pisamos, un worker puede quedar "pegado" a un
+        // valor viejo después de editar el .env → comportamiento intermitente.
+        putenv("{$clave}={$valor}");
+        $_ENV[$clave] = $valor;
     }
 }
 
@@ -73,6 +74,22 @@ if ($origenRequest !== '' && in_array($origenRequest, $origenesPermitidos, true)
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
     http_response_code(204);
+    exit;
+}
+
+// ── Protección CSRF ──
+// La cookie de sesión es SameSite=None (necesario para que viaje cross-origin
+// desde el frontend en Vercel), así que el browser ya no bloquea que se
+// ENVÍE la cookie en un POST disparado desde un sitio de terceros — a
+// diferencia de un fetch/XHR con JSON, un <form> multipart no dispara
+// preflight de CORS. Mitigación: en métodos que mutan estado, si el browser
+// mandó Origin (que es el caso normal en fetch/XHR y en POST cross-site de
+// browsers modernos) tiene que estar en la misma whitelist de CORS.
+$metodoRequest = $_SERVER['REQUEST_METHOD'] ?? '';
+if (in_array($metodoRequest, ['POST', 'PUT', 'DELETE'], true) && $origenRequest !== '' && !in_array($origenRequest, $origenesPermitidos, true)) {
+    http_response_code(403);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['error' => 'Origen no permitido.']);
     exit;
 }
 

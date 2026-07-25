@@ -6,6 +6,9 @@ final class Response
 {
     public static function json(array $data, int $status = 200): never
     {
+        // El caché dinámico de SiteGround respeta Cache-Control: sin esto
+        // cachea las respuestas de la API y el sitio muestra datos viejos.
+        header('Cache-Control: no-store, no-cache, must-revalidate');
         http_response_code($status);
         echo json_encode($data, JSON_UNESCAPED_UNICODE);
         exit;

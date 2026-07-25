@@ -3,8 +3,8 @@
  * GET  /api/admin/productos.php  → listado completo (incluye inactivos), protegido
  * POST /api/admin/productos.php  → crear producto
  *   multipart/form-data:
- *     nombre, subtitulo?, descripcionCorta?, descripcionLarga?, destacado?, activo?, orden?,
- *     imagen_1? (File — principal), galeria[]? (Files — galería)
+ *     nombre, categoriaId?, subtitulo?, descripcionCorta?, descripcionLarga?, destacado?, activo?, orden?
+ *   Sin imagen acá — las fotos viven en Cloudinary (migración 008), se resuelven por variante.
  */
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../lib/Response.php';
@@ -24,9 +24,9 @@ if ($metodo === 'GET') {
 if ($metodo === 'POST') {
     $datos = Validacion::datosProducto($_POST, esCreacion: true);
 
-    [$imagenPrincipal, $galeria] = Upload::procesarImagenesProducto($_FILES);
+    $certificados = Upload::procesarCertificados($_FILES);
 
-    $producto = Productos::crear($datos, $imagenPrincipal, $galeria);
+    $producto = Productos::crear($datos, $certificados);
     Response::ok($producto, 201);
 }
 

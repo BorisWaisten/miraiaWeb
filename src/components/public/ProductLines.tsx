@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { Producto } from '@/models/producto';
+import { urlProducto, type Producto } from '@/models/producto';
 
 interface Props {
   productos: Producto[];
@@ -7,7 +7,8 @@ interface Props {
 
 /**
  * Sección "Series" — grid de 3 cards con separadores de 1px.
- * SIN precios ni descripciones: imagen principal + nombre.
+ * Cada card sigue la jerarquía del Manual: Título (serif) → Subtítulo
+ * (uppercase espaciado) → Cuerpo (descripción corta). Sin precios.
  */
 export function ProductLines({ productos }: Props) {
   return (
@@ -23,7 +24,7 @@ export function ProductLines({ productos }: Props) {
         {productos.map((producto) => (
           <Link
             key={producto.id}
-            href={`/productos/ver/?slug=${producto.slug}`}
+            href={urlProducto(producto)}
             className="block bg-graphite transition-opacity hover:opacity-90"
           >
             <div className="relative h-[200px] bg-graphite-tile">
@@ -42,7 +43,17 @@ export function ProductLines({ productos }: Props) {
               )}
             </div>
             <div className="px-6 py-5">
-              <p className="font-serif text-base text-white">{producto.nombre}</p>
+              <p className="font-serif text-lg text-white">{producto.nombre}</p>
+              {producto.subtitulo && (
+                <p className="mt-1.5 text-[10px] uppercase tracking-widest2 text-graphite-muted">
+                  {producto.subtitulo}
+                </p>
+              )}
+              {producto.descripcionCorta && (
+                <p className="mt-3 line-clamp-2 text-[13px] leading-relaxed text-mist/80">
+                  {producto.descripcionCorta}
+                </p>
+              )}
             </div>
           </Link>
         ))}

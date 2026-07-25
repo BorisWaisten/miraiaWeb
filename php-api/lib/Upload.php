@@ -4,19 +4,14 @@ defined('MIRAIA_API_BOOT') or die('Acceso directo no permitido.');
 require_once __DIR__ . '/Response.php';
 
 /**
- * Subida de imágenes de producto al filesystem local del servidor SiteGround.
- * Soporta una imagen principal (imagen_1) y una galería de N imágenes
- * (input múltiple `galeria[]`) almacenada en `imagenes_galeria` JSON.
+ * Subida de archivos de producto al filesystem local del servidor SiteGround.
+ * Desde la migración 008 esto es solo para certificados (PDF) — las
+ * imágenes de producto (principal y por variante) ya no se suben como
+ * archivo, se resuelven en runtime contra Cloudinary
+ * (ver php-api/lib/Cloudinary.php).
  */
 final class Upload
 {
-    private const MIME_PERMITIDOS = [
-        'image/jpeg' => '.jpg',
-        'image/png'  => '.png',
-        'image/webp' => '.webp',
-        'image/avif' => '.avif',
-    ];
-
     private static function dirAbsoluta(): string
     {
         $configurada = env('UPLOADS_ABS_PATH');
@@ -29,96 +24,53 @@ final class Upload
     }
 
     /**
-     * Guarda un único archivo subido. Devuelve la ruta relativa pública, o null
-     * si no se envió archivo (imagen opcional).
-     */
-    public static function guardarImagenProducto(?array $archivo): ?string
-    {
-        if ($archivo === null || ($archivo['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
-            return null;
-        }
-
-        if ($archivo['error'] !== UPLOAD_ERR_OK) {
-            Response::error('Error al subir la imagen (código ' . $archivo['error'] . ').', 400);
-        }
-
-        $maxBytes = (int) env('UPLOAD_MAX_BYTES', (string) (5 * 1024 * 1024));
-        if ($archivo['size'] > $maxBytes) {
-            Response::error(
-                'La imagen supera el tamaño máximo permitido (' . round($maxBytes / 1024 / 1024) . 'MB).',
-                400
-            );
-        }
-
-        $finfo = new finfo(FILEINFO_MIME_TYPE);
-        $mime  = $finfo->file($archivo['tmp_name']);
-
-        if (!isset(self::MIME_PERMITIDOS[$mime])) {
-            Response::error('Formato de imagen no permitido. Usá JPG, PNG, WEBP o AVIF.', 400);
-        }
-
-        return self::moverArchivo($archivo['tmp_name'], self::MIME_PERMITIDOS[$mime]);
-    }
-
-    /**
-     * Procesa las imágenes de un producto. Devuelve [$imagenPrincipal, $galeriaArray].
+     * Certificados PDF de un producto (migración 006).
+     * Formato almacenado: array de {nombre, ruta} — nombre = filename original
+     * para mostrar, ruta = archivo único en disco.
      *
-     * - imagen_1 ($_FILES): imagen principal nueva (opcional)
-     * - galeria[] ($_FILES múltiple): imágenes nuevas que se AGREGAN a la galería
-     * - $galeriaConservar: rutas existentes que se mantienen (las que faltan se
-     *   borran del disco). null = mantener toda la galería existente.
-     *
-     * @param array      $files            típicamente $_FILES
-     * @param array      $existentes       producto existente (solo en edición)
-     * @param bool       $borrarPrincipal  true = borrar imagen principal existente
-     * @param array|null $galeriaConservar rutas existentes a conservar
+     * - certificados[] ($_FILES múltiple): PDFs nuevos que se AGREGAN
+     * - $conservar: rutas existentes que se mantienen (null = mantener todas)
      */
-    public static function procesarImagenesProducto(
+    public static function procesarCertificados(
         array $files,
         array $existentes = [],
-        bool $borrarPrincipal = false,
-        ?array $galeriaConservar = null
+        ?array $conservar = null
     ): array {
-        // — Imagen principal (imagen_1) —
-        $nuevaImagen1 = self::guardarImagenProducto($files['imagen_1'] ?? null);
+        $actuales = $existentes['certificados'] ?? [];
+        $finales  = $conservar === null
+            ? $actuales
+            : array_values(array_filter($actuales, fn ($c) => in_array($c['ruta'] ?? '', $conservar, true)));
 
-        if (($nuevaImagen1 !== null || $borrarPrincipal) && !empty($existentes['imagenPrincipal'])) {
-            self::borrarImagenProducto($existentes['imagenPrincipal']);
+        // Borrar del disco los existentes que no se conservan
+        foreach (array_udiff($actuales, $finales, fn ($a, $b) => strcmp($a['ruta'] ?? '', $b['ruta'] ?? '')) as $cert) {
+            self::borrarArchivo($cert['ruta'] ?? null);
         }
 
-        // — Galería —
-        $existente = $existentes['imagenesGaleria'] ?? [];
-        $galeria   = $galeriaConservar === null
-            ? $existente
-            : array_values(array_intersect($existente, $galeriaConservar));
-
-        // Borrar del disco las existentes que no se conservan
-        foreach (array_diff($existente, $galeria) as $ruta) {
-            self::borrarImagenProducto($ruta);
-        }
-
-        // Agregar las nuevas (input múltiple `galeria[]` — $_FILES lo entrega como arrays paralelos)
-        $lote = $files['galeria'] ?? null;
+        $lote = $files['certificados'] ?? null;
         if ($lote !== null && is_array($lote['name'] ?? null)) {
             foreach (array_keys($lote['name']) as $i) {
-                $archivo = [
-                    'name'     => $lote['name'][$i],
-                    'tmp_name' => $lote['tmp_name'][$i],
-                    'size'     => $lote['size'][$i],
-                    'error'    => $lote['error'][$i],
-                ];
-                $ruta = self::guardarImagenProducto($archivo);
-                if ($ruta !== null) {
-                    $galeria[] = $ruta;
+                if (($lote['error'][$i] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+                    continue;
                 }
+                if ($lote['error'][$i] !== UPLOAD_ERR_OK) {
+                    Response::error('Error al subir el certificado (código ' . $lote['error'][$i] . ').', 400);
+                }
+                $finfo = new finfo(FILEINFO_MIME_TYPE);
+                if ($finfo->file($lote['tmp_name'][$i]) !== 'application/pdf') {
+                    Response::error('Los certificados deben ser archivos PDF.', 400);
+                }
+                $finales[] = [
+                    'nombre' => basename($lote['name'][$i]),
+                    'ruta'   => self::moverArchivo($lote['tmp_name'][$i], '.pdf'),
+                ];
             }
         }
 
-        return [$nuevaImagen1, array_values($galeria)];
+        return array_values($finales);
     }
 
-    /** Borra una imagen previamente subida (al reemplazarla o eliminar el producto). */
-    public static function borrarImagenProducto(?string $rutaPublica): void
+    /** Borra un archivo previamente subido (al reemplazarlo o eliminar el producto). */
+    public static function borrarArchivo(?string $rutaPublica): void
     {
         if (!$rutaPublica) {
             return;
@@ -130,12 +82,11 @@ final class Upload
         }
     }
 
-    /** Borra todas las imágenes de un producto (principal + galería). */
-    public static function borrarTodasLasImagenes(array $producto): void
+    /** Borra los certificados de un producto (al eliminarlo). */
+    public static function borrarCertificados(array $producto): void
     {
-        self::borrarImagenProducto($producto['imagenPrincipal'] ?? null);
-        foreach ($producto['imagenesGaleria'] ?? [] as $ruta) {
-            self::borrarImagenProducto($ruta);
+        foreach ($producto['certificados'] ?? [] as $cert) {
+            self::borrarArchivo($cert['ruta'] ?? null);
         }
     }
 
@@ -153,7 +104,7 @@ final class Upload
 
         $destino = rtrim($dirAbsoluta, '/') . '/' . $nombreUnico;
         if (!move_uploaded_file($tmpName, $destino)) {
-            throw new RuntimeException('No se pudo guardar la imagen en el servidor.');
+            throw new RuntimeException('No se pudo guardar el archivo en el servidor.');
         }
 
         return rtrim(self::rutaPublicaBase(), '/') . '/' . $nombreUnico;

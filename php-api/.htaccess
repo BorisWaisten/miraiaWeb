@@ -16,5 +16,10 @@
 RewriteEngine On
 RewriteRule ^lib/ - [F,L]
 
+# cache/ — caché en disco de las respuestas de Cloudinary (php-api/lib/Cloudinary.php).
+# No es sensible (son URLs públicas de Cloudinary) pero tampoco tiene que
+# responder por HTTP directo.
+RewriteRule ^cache/ - [F,L]
+
 # CORS / headers comunes los pone cada script vía config.php — no se setean acá
 # para no pisar las respuestas de error con código de estado distinto de 200.

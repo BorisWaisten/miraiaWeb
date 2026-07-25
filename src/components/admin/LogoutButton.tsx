@@ -1,13 +1,14 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { apiSendJson } from '@/lib/api';
+import { apiSendJson, invalidarSesionAdmin } from '@/lib/api';
 
 export function LogoutButton() {
   const router = useRouter();
 
   async function handleLogout() {
     await apiSendJson('/admin/logout.php', {});
+    invalidarSesionAdmin();
     router.push('/admin/login/');
   }
 

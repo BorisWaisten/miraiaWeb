@@ -31,12 +31,14 @@ export function ProductsTable() {
   if (!productos) return <p className="text-sm text-graphite-muted">Cargando…</p>;
 
   return (
-    <table className="w-full border border-graphite-border text-left text-sm">
+    <div className="overflow-x-auto">
+    <table className="w-full min-w-[640px] border border-graphite-border text-left text-sm">
       <thead>
         <tr className="border-b border-graphite-border text-[11px] uppercase tracking-wide text-graphite-muted">
           <th className="px-4 py-3 w-14" />
           <th className="px-4 py-3">Producto</th>
-          <th className="px-4 py-3">Imágenes</th>
+          <th className="px-4 py-3">Categoría</th>
+          <th className="px-4 py-3">Variantes</th>
           <th className="px-4 py-3">Estado</th>
           <th className="px-4 py-3" />
         </tr>
@@ -62,9 +64,9 @@ export function ProductsTable() {
               </div>
             </td>
             <td className="px-4 py-3 text-white">{p.nombre}</td>
-            <td className="px-4 py-3 text-graphite-muted">
-              {(p.imagenPrincipal ? 1 : 0) + p.imagenesGaleria.length}
-            </td>
+            <td className="px-4 py-3 text-graphite-muted">{p.categoria?.nombre ?? '—'}</td>
+            {/* `?? []`: una API vieja (pre-migración 007) no manda variantes. */}
+            <td className="px-4 py-3 text-graphite-muted">{(p.variantes ?? []).length}</td>
             <td className="px-4 py-3">
               <span className={p.activo ? 'text-bronze' : 'text-graphite-muted'}>
                 {p.activo ? 'Activo' : 'Inactivo'}
@@ -82,12 +84,13 @@ export function ProductsTable() {
         ))}
         {productos.length === 0 && (
           <tr>
-            <td colSpan={5} className="px-4 py-6 text-center text-graphite-muted">
+            <td colSpan={6} className="px-4 py-6 text-center text-graphite-muted">
               Todavía no hay productos cargados.
             </td>
           </tr>
         )}
       </tbody>
     </table>
+    </div>
   );
 }
