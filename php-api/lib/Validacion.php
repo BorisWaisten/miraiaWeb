@@ -152,4 +152,50 @@ final class Validacion
 
         return $datos;
     }
+
+    public static function datosSeccionNosotros(array $input, bool $esCreacion): array
+    {
+        $datos = [];
+
+        $titulo = trim($input['titulo'] ?? '');
+        if ($esCreacion || array_key_exists('titulo', $input)) {
+            if (mb_strlen($titulo) < 2 || mb_strlen($titulo) > 220) {
+                Response::error('El título es obligatorio (2 a 220 caracteres).', 400);
+            }
+            $datos['titulo'] = $titulo;
+        }
+
+        $body = trim($input['body'] ?? '');
+        if ($esCreacion || array_key_exists('body', $input)) {
+            if (mb_strlen($body) < 10) {
+                Response::error('El cuerpo de la sección es obligatorio (mínimo 10 caracteres).', 400);
+            }
+            $datos['body'] = $body;
+        }
+
+        if (array_key_exists('subtitulo', $input)) {
+            $valor = trim((string) $input['subtitulo']);
+            if (mb_strlen($valor) > 280) {
+                Response::error('El subtítulo no puede superar los 280 caracteres.', 400);
+            }
+            $datos['subtitulo'] = $valor !== '' ? $valor : null;
+        }
+
+        if (array_key_exists('imagenUrl', $input)) {
+            $valor = trim((string) $input['imagenUrl']);
+            if (mb_strlen($valor) > 500) {
+                Response::error('La URL de la imagen es demasiado larga.', 400);
+            }
+            $datos['imagenUrl'] = $valor !== '' ? $valor : null;
+        }
+
+        if (isset($input['activo'])) {
+            $datos['activo'] = in_array($input['activo'], ['1', 'true', 'on', 1, true], true);
+        }
+        if (isset($input['orden'])) {
+            $datos['orden'] = max(0, (int) $input['orden']);
+        }
+
+        return $datos;
+    }
 }
