@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { apiGet } from '@/lib/api';
 import type { Producto } from '@/models/producto';
 
-const WHATSAPP_NUMERO = '5493446575620';
+const WHATSAPP_NUMERO = '5491124868168';
 
 type Modo = 'consulta' | 'presupuesto';
 
