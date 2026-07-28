@@ -14,7 +14,9 @@ export function ProductLines({ productos }: Props) {
   return (
     <section className="px-8 py-16 md:px-12">
       <div className="mb-12 flex items-end justify-between">
-        <h2 className="font-serif text-2xl font-medium text-white md:text-[28px]">Series</h2>
+        <h2 className="font-serif text-2xl font-medium text-white md:text-[28px]">
+          Alfombras Modulares y Pisos Técnicos
+        </h2>
         <Link href="/productos/" className="text-[11px] uppercase tracking-wide text-bronze">
           Ver todos los productos →
         </Link>

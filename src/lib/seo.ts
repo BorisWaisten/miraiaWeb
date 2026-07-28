@@ -9,9 +9,10 @@ import type { BlogPost } from '@/models/blog';
 export const SITE_URL = 'https://miraia.com.ar';
 
 // La API PHP a consultar durante `next build` para conocer los slugs.
-// Por defecto producción; override con BUILD_API_BASE_URL si cambia
-// (el hostname de staging ignaciom37.sg-host.com dejó de resolver — dominio actual: miraia.com.ar).
-const BUILD_API = process.env.BUILD_API_BASE_URL ?? 'https://miraia.com.ar/api';
+// Por defecto producción; override con BUILD_API_BASE_URL si cambia.
+// Desde la migración del front a Vercel, el back vive en el subdominio
+// api.miraia.com.ar (antes compartía dominio con el front en SiteGround).
+const BUILD_API = process.env.BUILD_API_BASE_URL ?? 'https://api.miraia.com.ar/api';
 
 let cache: Promise<Producto[]> | null = null;
 

@@ -46,7 +46,9 @@ export default function ProductosPage() {
       <section className="px-8 py-16 md:px-12">
         <div className="mb-10">
           <p className="mb-3 text-[10px] uppercase tracking-widest2 text-bronze">Productos</p>
-          <h1 className="font-serif text-3xl font-medium text-white">Series</h1>
+          <h1 className="font-serif text-3xl font-medium text-white">
+            Alfombras Modulares y Pisos Técnicos para Arquitectura Contract
+          </h1>
         </div>
 
         {productos === null ? (

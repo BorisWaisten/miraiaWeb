@@ -34,11 +34,35 @@ export function crearPaginaProducto(linea: LineaProducto) {
     const { slug } = await params;
     const producto = (await deLinea()).find((p) => p.slug === slug);
     if (!producto) return { title: 'Miraia', robots: { index: false } };
+
+    // Patrón del doc SEO (ítem 01): "Nombre — Subtítulo | Miraia"
+    const titulo = `${producto.nombre} — ${producto.subtitulo ?? etiqueta} | Miraia`;
+    const descripcion = producto.descripcionCorta ?? producto.subtitulo ?? undefined;
+    const url = urlProducto(producto);
+    // `new URL(ruta, SITE_URL)` deja pasar imagenPrincipal absoluta (Cloudinary) tal cual.
+    const imagen = producto.imagenPrincipal ? new URL(producto.imagenPrincipal, SITE_URL).href : undefined;
+
     return {
-      // Patrón del doc SEO (ítem 01): "Nombre — Subtítulo | Miraia"
-      title: `${producto.nombre} — ${producto.subtitulo ?? etiqueta} | Miraia`,
-      description: producto.descripcionCorta ?? producto.subtitulo ?? undefined,
-      alternates: { canonical: urlProducto(producto) },
+      title: titulo,
+      description: descripcion,
+      alternates: { canonical: url },
+      // Ítem 05 del doc SEO: sin esto, compartir un producto (WhatsApp, LinkedIn)
+      // mostraba la imagen y el texto del home en vez de los del producto.
+      openGraph: {
+        title: titulo,
+        description: descripcion,
+        url,
+        siteName: 'Miraia',
+        images: imagen ? [{ url: imagen, width: 1200, height: 630, alt: producto.nombre }] : undefined,
+        locale: 'es_AR',
+        type: 'website',
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: titulo,
+        description: descripcion,
+        images: imagen ? [imagen] : undefined,
+      },
     };
   }
 

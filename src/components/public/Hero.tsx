@@ -46,12 +46,12 @@ export function Hero({ productos = [] }: Props) {
           <p className="mb-8 text-[10px] uppercase tracking-widest2 text-bronze">
             Piso técnico · Alfombra modular
           </p>
-          <h1 className="mb-6 font-serif text-4xl font-medium leading-tight text-white md:text-[42px]">
-            Superficies
+          <h1 className="mb-6 font-serif text-4xl font-medium leading-tight text-white md:text-[38px]">
+            Alfombras Modulares
             <br />
-            que definen
+            y Piso Técnico para
             <br />
-            espacios.
+            Arquitectura Contract
           </h1>
           <p className="mb-10 max-w-[340px] text-[13px] leading-7 text-graphite-muted">
             Materiales de alto rendimiento para arquitectura contract, oficinas y espacios de trabajo de autor.
