@@ -5,14 +5,14 @@ import Link from 'next/link';
 /** Hero de portada — foto de fondo full-bleed con overlay para legibilidad del texto. */
 export function Hero() {
   return (
-    <div className="relative flex min-h-[600px] items-center overflow-hidden border-b border-graphite-border px-6 py-24 md:min-h-[680px] md:px-12">
+    <div className="relative flex min-h-[600px] items-center overflow-hidden border-b border-graphite-border px-6 py-24 md:h-[78vh] md:min-h-[640px] md:max-h-[840px] md:px-12">
       <picture>
         <source media="(max-width: 767px)" srcSet="/images/hero-bg-mobile.jpg" />
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/images/hero-bg.jpg"
           alt=""
-          className="absolute inset-0 h-full w-full object-cover object-[75%_30%] md:object-[65%_center]"
+          className="absolute inset-0 h-full w-full object-cover object-[75%_30%] md:object-[65%_35%]"
         />
       </picture>
 
