@@ -33,7 +33,7 @@ export default function HomePage() {
     <div className="bg-graphite">
       <SiteNav />
       <main>
-        <Hero productos={todos} />
+        <Hero />
         <MetricsStrip />
         {productos !== null && <ProductLines productos={productosHome} />}
         {proyectos !== null && proyectos.length > 0 && <Projects proyectos={proyectos} />}

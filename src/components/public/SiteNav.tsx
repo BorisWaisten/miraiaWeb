@@ -40,7 +40,7 @@ export function SiteNav() {
           <span className="font-serif text-base font-medium tracking-widest3 text-white">MIRAIA</span>
         </Link>
 
-        <div className="hidden gap-8 md:flex">
+        <div className="hidden gap-8 lg:flex">
           {LINKS.map((l) => (
             <Link key={l.href} href={l.href} className="text-xs uppercase tracking-wide text-graphite-muted hover:text-bronze">
               {l.label}
@@ -51,18 +51,18 @@ export function SiteNav() {
         <div className="flex items-center gap-3">
           <Link
             href="/contacto/"
-            className="hidden border border-bronze px-5 py-2 text-[11px] uppercase tracking-wide text-bronze transition-colors hover:bg-bronze hover:text-obsidian md:inline-block"
+            className="hidden border border-bronze px-5 py-2 text-[11px] uppercase tracking-wide text-bronze transition-colors hover:bg-bronze hover:text-obsidian lg:inline-block"
           >
             Solicitar catálogo
           </Link>
 
-          {/* Hamburguesa — reemplaza al nav + CTA de arriba por debajo de md */}
+          {/* Hamburguesa — reemplaza al nav + CTA de arriba por debajo de lg (md se queda corto: 5 links + CTA no entran a 768px) */}
           <button
             type="button"
             onClick={() => setAbierto((v) => !v)}
             aria-label={abierto ? 'Cerrar menú' : 'Abrir menú'}
             aria-expanded={abierto}
-            className="flex h-9 w-9 flex-col items-center justify-center gap-[5px] md:hidden"
+            className="flex h-9 w-9 flex-col items-center justify-center gap-[5px] lg:hidden"
           >
             <span
               className={`block h-px w-6 bg-white transition-transform duration-200 ${abierto ? 'translate-y-[6.5px] rotate-45' : ''}`}
@@ -77,7 +77,7 @@ export function SiteNav() {
 
       {/* Panel mobile — mismos links que el nav de desktop + CTA, apilados */}
       {abierto && (
-        <div className="mt-5 flex flex-col border-t border-graphite-border pt-2 md:hidden">
+        <div className="mt-5 flex flex-col border-t border-graphite-border pt-2 lg:hidden">
           {LINKS.map((l) => (
             <Link
               key={l.href}
