@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 import { SiteNav } from '@/components/public/SiteNav';
 import { SiteFooter } from '@/components/public/SiteFooter';
 import { ProductoDetalle } from '@/components/public/ProductoDetalle';
@@ -70,18 +71,9 @@ export function crearPaginaProducto(linea: LineaProducto) {
     const { slug } = await params;
     const producto = (await deLinea()).find((p) => p.slug === slug);
 
-    if (!producto) {
-      // Placeholder de línea vacía — nunca linkeado, noindex.
-      return (
-        <div className="bg-graphite">
-          <SiteNav />
-          <section className="px-8 py-16 md:px-12">
-            <p className="text-sm text-graphite-muted">Próximamente.</p>
-          </section>
-          <SiteFooter />
-        </div>
-      );
-    }
+    // Con dynamicParams=true cualquier slug (typo, URL vieja, línea sin
+    // productos) llega acá — 404 real en vez de una página fantasma 200.
+    if (!producto) notFound();
 
     const abs = (ruta: string) => new URL(ruta, SITE_URL).href;
 
