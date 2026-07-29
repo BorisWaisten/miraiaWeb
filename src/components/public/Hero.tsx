@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
+import { cldOptimizar } from '@/lib/cloudinary';
 import type { Producto } from '@/models/producto';
 
 interface Props {
@@ -118,7 +119,7 @@ export function Hero({ productos = [] }: Props) {
                     */}
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={producto.imagenPrincipal!}
+                      src={cldOptimizar(producto.imagenPrincipal!, 700)}
                       alt={producto.nombre}
                       style={{
                         width: '100%',

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { SiteNav } from '@/components/public/SiteNav';
 import { SiteFooter } from '@/components/public/SiteFooter';
 import { apiGet } from '@/lib/api';
+import { cldOptimizar } from '@/lib/cloudinary';
 import type { SeccionNosotros } from '@/models/nosotros';
 
 /** Texto original — se muestra mientras el admin no cargó ninguna sección en /admin/nosotros/. */
@@ -25,7 +26,7 @@ export default function NosotrosPage() {
   return (
     <div className="bg-graphite">
       <SiteNav />
-      <section className="px-8 py-16 md:px-12">
+      <main className="px-8 py-16 md:px-12">
         <div className="mx-auto max-w-2xl">
           <p className="mb-3 text-[10px] uppercase tracking-widest2 text-bronze">Nosotros</p>
           <h1 className="font-serif text-3xl font-medium text-white md:text-4xl">
@@ -53,7 +54,7 @@ export default function NosotrosPage() {
             Solicitar catálogo
           </a>
         </div>
-      </section>
+      </main>
       <SiteFooter />
     </div>
   );
@@ -73,7 +74,7 @@ function SeccionBloque({ seccion }: { seccion: SeccionNosotros }) {
       {seccion.imagenUrl && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={seccion.imagenUrl}
+          src={cldOptimizar(seccion.imagenUrl, 1200)}
           alt={seccion.titulo}
           className="mt-5 w-full object-cover"
           loading="lazy"

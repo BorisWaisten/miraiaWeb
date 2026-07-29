@@ -35,7 +35,7 @@ export default function VerProductoPage() {
   return (
     <div className="bg-graphite">
       <SiteNav />
-      <section className="px-8 py-16 md:px-12">
+      <main className="px-8 py-16 md:px-12">
         {producto === undefined ? (
           <p className="text-sm text-graphite-muted">Cargando…</p>
         ) : producto === null ? (
@@ -43,7 +43,7 @@ export default function VerProductoPage() {
         ) : (
           <ProductoDetalle producto={producto} />
         )}
-      </section>
+      </main>
       <SiteFooter />
     </div>
   );

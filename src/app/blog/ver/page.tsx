@@ -32,7 +32,7 @@ export default function VerBlogPostPage() {
   return (
     <div className="bg-graphite">
       <SiteNav />
-      <section className="px-8 py-16 md:px-12">
+      <main className="px-8 py-16 md:px-12">
         {post === undefined ? (
           <p className="text-sm text-graphite-muted">Cargando…</p>
         ) : post === null ? (
@@ -40,7 +40,7 @@ export default function VerBlogPostPage() {
         ) : (
           <BlogPostDetalle post={post} />
         )}
-      </section>
+      </main>
       <SiteFooter />
     </div>
   );

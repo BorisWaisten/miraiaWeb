@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { SiteNav } from '@/components/public/SiteNav';
 import { SiteFooter } from '@/components/public/SiteFooter';
 import { apiGet } from '@/lib/api';
+import { cldOptimizar } from '@/lib/cloudinary';
 import { urlBlogPost, type BlogPost } from '@/models/blog';
 
 /**
@@ -34,7 +35,7 @@ export default function BlogPage() {
     <div className="bg-graphite">
       <SiteNav />
 
-      <section className="px-8 py-16 md:px-12">
+      <main className="px-8 py-16 md:px-12">
         <div className="mb-10">
           <p className="mb-3 text-[10px] uppercase tracking-widest2 text-bronze">Blog</p>
           <h1 className="font-serif text-3xl font-medium text-white">Notas técnicas</h1>
@@ -83,7 +84,7 @@ export default function BlogPage() {
                               {post.imagenPortada ? (
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img
-                                  src={post.imagenPortada}
+                                  src={cldOptimizar(post.imagenPortada, 350)}
                                   alt={post.titulo}
                                   className="h-full w-full object-cover"
                                   loading="lazy"
@@ -111,7 +112,7 @@ export default function BlogPage() {
               })}
           </div>
         )}
-      </section>
+      </main>
 
       <SiteFooter />
     </div>

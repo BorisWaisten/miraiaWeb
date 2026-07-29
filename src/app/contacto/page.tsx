@@ -14,7 +14,7 @@ export default function ContactoPage() {
   return (
     <div className="bg-graphite">
       <SiteNav />
-      <section className="px-8 py-16 md:px-12">
+      <main className="px-8 py-16 md:px-12">
         <div className="mx-auto max-w-xl">
           <p className="mb-3 text-[10px] uppercase tracking-widest2 text-bronze">Contacto</p>
           <h1 className="font-serif text-3xl font-medium text-white">Hablemos por WhatsApp</h1>
@@ -24,7 +24,7 @@ export default function ContactoPage() {
           </p>
           <ContactoForm />
         </div>
-      </section>
+      </main>
       <SiteFooter />
     </div>
   );

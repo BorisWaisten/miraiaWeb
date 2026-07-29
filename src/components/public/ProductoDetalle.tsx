@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { obtenerImagenesVariante, urlArchivo } from '@/lib/api';
+import { cldOptimizar } from '@/lib/cloudinary';
 import { LINEAS, parseEspecificaciones, type Producto } from '@/models/producto';
 import type { Variante } from '@/models/variante';
 
@@ -191,7 +192,7 @@ function Carrusel({ producto }: { producto: Producto }) {
             <>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={imagenes[indiceSeguro] ?? ''}
+                src={cldOptimizar(imagenes[indiceSeguro] ?? '', 1200)}
                 alt={`${altBase} (imagen ${indiceSeguro + 1} de ${imagenes.length})`}
                 className="h-full w-full object-cover"
                 onError={() => marcarRota(imagenes[indiceSeguro] ?? '')}
@@ -236,7 +237,12 @@ function Carrusel({ producto }: { producto: Producto }) {
               }`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={src} alt="" className="h-full w-full object-cover" onError={() => marcarRota(src)} />
+              <img
+                src={cldOptimizar(src, 150)}
+                alt=""
+                className="h-full w-full object-cover"
+                onError={() => marcarRota(src)}
+              />
             </button>
           ))}
         </div>

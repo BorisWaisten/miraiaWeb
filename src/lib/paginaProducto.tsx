@@ -106,9 +106,9 @@ export function crearPaginaProducto(linea: LineaProducto) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
         <SiteNav />
-        <section className="px-8 py-16 md:px-12">
+        <main className="px-8 py-16 md:px-12">
           <ProductoDetalle producto={producto} />
-        </section>
+        </main>
         <SiteFooter />
       </div>
     );

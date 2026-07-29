@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { cldOptimizar } from '@/lib/cloudinary';
 import { urlProducto, type Producto } from '@/models/producto';
 
 interface Props {
@@ -33,7 +34,7 @@ export function ProductLines({ productos }: Props) {
               {producto.imagenPrincipal ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={producto.imagenPrincipal}
+                  src={cldOptimizar(producto.imagenPrincipal, 700)}
                   alt={producto.nombre}
                   className="h-full w-full object-cover"
                   loading="lazy"

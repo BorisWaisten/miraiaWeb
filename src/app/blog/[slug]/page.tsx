@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 import { SiteNav } from '@/components/public/SiteNav';
 import { SiteFooter } from '@/components/public/SiteFooter';
 import { BlogPostDetalle } from '@/components/public/BlogPostDetalle';
@@ -9,8 +10,11 @@ import { urlBlogPost } from '@/models/blog';
  * Detalle de posteo — estático, mismo patrón que /alfombras-modulares/[slug]/
  * (ver src/lib/paginaProducto.tsx). Sin "líneas" acá: el blog es un solo
  * namespace de URL, no hace falta la fábrica parametrizada de productos.
+ *
+ * `dynamicParams = true` (default): posteos creados después del build se
+ * renderizan on-demand en Vercel, en vez de dar 404 hasta el próximo deploy.
  */
-export const dynamicParams = false;
+export const dynamicParams = true;
 
 export async function generateStaticParams() {
   const slugs = (await getBlogPostsBuild()).map((p) => ({ slug: p.slug }));
@@ -38,17 +42,7 @@ export default async function PaginaBlogPost({ params }: { params: Promise<{ slu
   const { slug } = await params;
   const post = (await getBlogPostsBuild()).find((p) => p.slug === slug);
 
-  if (!post) {
-    return (
-      <div className="bg-graphite">
-        <SiteNav />
-        <section className="px-8 py-16 md:px-12">
-          <p className="text-sm text-graphite-muted">Próximamente.</p>
-        </section>
-        <SiteFooter />
-      </div>
-    );
-  }
+  if (!post) notFound();
 
   const abs = (ruta: string) => new URL(ruta, SITE_URL).href;
 
@@ -82,9 +76,9 @@ export default async function PaginaBlogPost({ params }: { params: Promise<{ slu
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <SiteNav />
-      <section className="px-8 py-16 md:px-12">
+      <main className="px-8 py-16 md:px-12">
         <BlogPostDetalle post={post} />
-      </section>
+      </main>
       <SiteFooter />
     </div>
   );

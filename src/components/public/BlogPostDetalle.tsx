@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { cldOptimizar } from '@/lib/cloudinary';
 import { parseContenidoBlog, parseTextoConNegrita, type BlogPost } from '@/models/blog';
 
 /**
@@ -41,7 +42,7 @@ export function BlogPostDetalle({ post }: { post: BlogPost }) {
           <div className="mt-8 h-[320px] bg-graphite-tile md:h-[420px]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={post.imagenPortada}
+              src={cldOptimizar(post.imagenPortada, 1200)}
               alt={post.titulo}
               className="h-full w-full object-cover"
             />

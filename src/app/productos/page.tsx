@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { SiteNav } from '@/components/public/SiteNav';
 import { SiteFooter } from '@/components/public/SiteFooter';
 import { apiGet } from '@/lib/api';
+import { cldOptimizar } from '@/lib/cloudinary';
 import { LINEAS, parseEspecificaciones, urlProducto, type LineaProducto, type Producto } from '@/models/producto';
 
 /**
@@ -43,7 +44,7 @@ export default function ProductosPage() {
     <div className="bg-graphite">
       <SiteNav />
 
-      <section className="px-8 py-16 md:px-12">
+      <main className="px-8 py-16 md:px-12">
         <div className="mb-10">
           <p className="mb-3 text-[10px] uppercase tracking-widest2 text-bronze">Productos</p>
           <h1 className="font-serif text-3xl font-medium text-white">
@@ -92,7 +93,7 @@ export default function ProductosPage() {
                         {producto.imagenPrincipal ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
-                            src={producto.imagenPrincipal}
+                            src={cldOptimizar(producto.imagenPrincipal, 700)}
                             alt={producto.nombre}
                             className="h-full w-full object-cover"
                             loading="lazy"
@@ -125,7 +126,7 @@ export default function ProductosPage() {
             );
           })
         )}
-      </section>
+      </main>
 
       <SiteFooter />
     </div>

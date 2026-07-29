@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { apiGet, apiDelete } from '@/lib/api';
+import { cldOptimizar } from '@/lib/cloudinary';
 import type { Producto } from '@/models/producto';
 
 /** Tabla de productos del panel admin — listar, ir a editar, eliminar. */
@@ -51,7 +52,7 @@ export function ProductsTable() {
                 {p.imagenPrincipal ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={p.imagenPrincipal}
+                    src={cldOptimizar(p.imagenPrincipal, 100)}
                     alt={p.nombre}
                     className="h-full w-full object-cover"
                     loading="lazy"
