@@ -18,7 +18,7 @@ export function Projects({ proyectos }: Props) {
         <h2 className="font-serif text-2xl font-medium text-white md:text-[28px]">
           Alfombras modulares y piso técnico instalados en proyectos reales
         </h2>
-        <Link href="/#proyectos" className="text-[11px] uppercase tracking-wide text-bronze">
+        <Link href="/proyectos/" className="text-[11px] uppercase tracking-wide text-bronze">
           Ver todos →
         </Link>
       </div>

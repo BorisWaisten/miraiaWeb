@@ -43,7 +43,7 @@ export function Hero() {
           <Link href="/productos/" className="bg-bronze px-7 py-3 text-[11px] uppercase tracking-wide text-obsidian">
             Ver productos
           </Link>
-          <Link href="/#proyectos" className="text-[11px] uppercase tracking-wide text-white hover:text-bronze">
+          <Link href="/proyectos/" className="text-[11px] uppercase tracking-wide text-white hover:text-bronze">
             Ver proyectos →
           </Link>
         </div>

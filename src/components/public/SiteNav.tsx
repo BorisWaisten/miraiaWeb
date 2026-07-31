@@ -8,7 +8,7 @@ import { CRM_URL } from '@/lib/contacto';
 // presupuestos desde un CRM aparte, así que el link redirige ahí directo.
 const LINKS = [
   { href: '/productos/', label: 'Productos' },
-  { href: '/#proyectos', label: 'Proyectos' },
+  { href: '/proyectos/', label: 'Proyectos' },
   { href: '/blog/', label: 'Blog' },
   { href: '/nosotros/', label: 'Nosotros' },
   { href: CRM_URL, label: 'Contacto' },
