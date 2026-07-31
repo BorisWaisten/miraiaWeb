@@ -1,4 +1,6 @@
-/** Footer — fondo negro (obsidiana), 3 columnas: marca, empresa, contacto. */
+import { whatsappUrl } from '@/lib/contacto';
+
+/** Footer — fondo negro (obsidiana), 3 columnas: marca, productos, contacto. */
 export function SiteFooter() {
   return (
     <>
@@ -10,36 +12,58 @@ export function SiteFooter() {
           </svg>
           <p className="mb-2 font-serif text-sm tracking-widest2 text-white">MIRAIA</p>
           <p className="text-[11px] leading-relaxed text-graphite-muted">
-            Superficies de autor
+            Alfombras modulares y piso técnico
             <br />
             para arquitectura contract.
           </p>
         </div>
 
         <div>
-          <p className="mb-4 text-[10px] uppercase tracking-wide text-bronze">Empresa</p>
-          <FooterLink>Nosotros</FooterLink>
-          <FooterLink>Proyectos</FooterLink>
-          <FooterLink>Showroom</FooterLink>
+          <p className="mb-4 text-[10px] uppercase tracking-wide text-bronze">Productos</p>
+          <FooterLink href="/productos/">Alfombras modulares</FooterLink>
+          <FooterLink href="/productos/">Baldosas de alfombra</FooterLink>
+          <FooterLink href="/productos/">Piso técnico elevado</FooterLink>
+          <FooterLink href="/productos/">Cloudstory Nylon</FooterLink>
         </div>
 
         <div>
           <p className="mb-4 text-[10px] uppercase tracking-wide text-bronze">Contacto</p>
           <FooterLink>Buenos Aires, CABA</FooterLink>
-          <FooterLink>info@miraia.com.ar</FooterLink>
-          <FooterLink>WhatsApp comercial</FooterLink>
+          <FooterLink href="mailto:info@miraia.com.ar">info@miraia.com.ar</FooterLink>
+          <FooterLink href={whatsappUrl()} target="_blank">
+            WhatsApp comercial
+          </FooterLink>
+          <FooterLink>LinkedIn</FooterLink>
         </div>
       </footer>
 
-      <div className="flex items-center justify-between border-t border-graphite bg-obsidian px-8 py-4 md:px-12">
+      <div className="flex flex-col gap-1.5 border-t border-graphite bg-obsidian px-8 py-4 sm:flex-row sm:items-center sm:justify-between md:px-12">
         <p className="text-[11px] tracking-wide text-graphite-border">
-          © {new Date().getFullYear()} MIRAIA — Surfaces &amp; Contract.
+          © {new Date().getFullYear()} Miraia. Todos los derechos reservados.
         </p>
+        <p className="text-[11px] tracking-wide text-graphite-border">miraia.com.ar</p>
       </div>
     </>
   );
 }
 
-function FooterLink({ children }: { children: React.ReactNode }) {
-  return <a className="mb-2 block text-xs tracking-wide text-graphite-muted hover:text-bronze">{children}</a>;
+function FooterLink({
+  children,
+  href,
+  target,
+}: {
+  children: React.ReactNode;
+  href?: string;
+  target?: string;
+}) {
+  return (
+    <a
+      href={href}
+      target={target}
+      rel={target === '_blank' ? 'noopener noreferrer' : undefined}
+      className="mb-2 block text-xs tracking-wide text-graphite-muted hover:text-bronze"
+    >
+      {children}
+    </a>
+  );
 }

@@ -1,29 +1,22 @@
 import type { Metadata } from 'next';
 import { SiteNav } from '@/components/public/SiteNav';
 import { SiteFooter } from '@/components/public/SiteFooter';
-import { ContactoForm } from '@/components/public/ContactoForm';
+import { RedirectToCRM } from '@/components/public/RedirectToCRM';
 
+// Contacto y presupuesto ahora se manejan desde el CRM del cliente
+// (miraia3.netlify.app) — esta ruta solo existe para no romper links/bookmarks
+// viejos a /contacto/, por eso queda fuera del sitemap y sin indexar.
 export const metadata: Metadata = {
-  title: 'Contacto — Consultas y Presupuestos | Miraia',
-  description:
-    'Escribinos por WhatsApp para una consulta general o para pedir presupuesto de alfombras modulares y piso técnico. Atención directa a arquitectos y estudios.',
-  alternates: { canonical: '/contacto/' },
+  title: 'Contacto | Miraia',
+  robots: { index: false, follow: false },
 };
 
 export default function ContactoPage() {
   return (
     <div className="bg-graphite">
       <SiteNav />
-      <main className="px-8 py-16 md:px-12">
-        <div className="mx-auto max-w-xl">
-          <p className="mb-3 text-[10px] uppercase tracking-widest2 text-bronze">Contacto</p>
-          <h1 className="font-serif text-3xl font-medium text-white">Hablemos por WhatsApp</h1>
-          <p className="mt-4 text-sm leading-relaxed text-graphite-muted">
-            Elegí si querés hacer una consulta general o pedir presupuesto — te respondemos
-            directo por WhatsApp.
-          </p>
-          <ContactoForm />
-        </div>
+      <main className="flex min-h-[40vh] items-center justify-center px-8 py-16 md:px-12">
+        <RedirectToCRM />
       </main>
       <SiteFooter />
     </div>

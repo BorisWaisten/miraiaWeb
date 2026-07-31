@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Script from 'next/script';
 import { Playfair_Display, Inter } from 'next/font/google';
 import { SITE_URL } from '@/lib/seo';
+import { WhatsAppButton } from '@/components/public/WhatsAppButton';
 import './globals.css';
 
 /**
@@ -78,6 +79,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="es-AR" className={`${fontSerif.variable} ${fontSans.variable}`}>
       <body className="font-sans bg-graphite text-white antialiased">
         {children}
+        <WhatsAppButton />
         {GA_ID && (
           <>
             <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`} strategy="afterInteractive" />

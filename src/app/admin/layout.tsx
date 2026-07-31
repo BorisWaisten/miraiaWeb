@@ -78,6 +78,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <AdminNavLink href="/admin/">Resumen</AdminNavLink>
             <AdminNavLink href="/admin/productos/">Productos</AdminNavLink>
             <AdminNavLink href="/admin/categorias/">Categorías</AdminNavLink>
+            <AdminNavLink href="/admin/proyectos/">Proyectos</AdminNavLink>
             <AdminNavLink href="/admin/blog/">Blog</AdminNavLink>
             <AdminNavLink href="/admin/nosotros/">Nosotros</AdminNavLink>
           </nav>

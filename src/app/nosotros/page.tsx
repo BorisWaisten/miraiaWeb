@@ -5,6 +5,7 @@ import { SiteNav } from '@/components/public/SiteNav';
 import { SiteFooter } from '@/components/public/SiteFooter';
 import { apiGet } from '@/lib/api';
 import { cldOptimizar } from '@/lib/cloudinary';
+import { CRM_URL } from '@/lib/contacto';
 import type { SeccionNosotros } from '@/models/nosotros';
 
 /** Texto original — se muestra mientras el admin no cargó ninguna sección en /admin/nosotros/. */
@@ -48,7 +49,7 @@ export default function NosotrosPage() {
           )}
 
           <a
-            href="/contacto/"
+            href={CRM_URL}
             className="mt-10 inline-block border border-bronze px-7 py-3 text-[11px] uppercase tracking-widest2 text-bronze transition-colors hover:bg-bronze hover:text-obsidian"
           >
             Solicitar catálogo

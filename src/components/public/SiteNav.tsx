@@ -2,13 +2,16 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { CRM_URL } from '@/lib/contacto';
 
+// "Contacto" no abre una página propia — el cliente maneja consultas y
+// presupuestos desde un CRM aparte, así que el link redirige ahí directo.
 const LINKS = [
   { href: '/productos/', label: 'Productos' },
   { href: '/#proyectos', label: 'Proyectos' },
   { href: '/blog/', label: 'Blog' },
   { href: '/nosotros/', label: 'Nosotros' },
-  { href: '/contacto/', label: 'Contacto' },
+  { href: CRM_URL, label: 'Contacto' },
 ] as const;
 
 /** Navegación principal — fiel al HTML de referencia (fondo grafito, separador inferior). */
@@ -50,7 +53,7 @@ export function SiteNav() {
 
         <div className="flex items-center gap-3">
           <Link
-            href="/contacto/"
+            href={CRM_URL}
             className="hidden border border-bronze px-5 py-2 text-[11px] uppercase tracking-wide text-bronze transition-colors hover:bg-bronze hover:text-obsidian lg:inline-block"
           >
             Solicitar catálogo
@@ -89,7 +92,7 @@ export function SiteNav() {
             </Link>
           ))}
           <Link
-            href="/contacto/"
+            href={CRM_URL}
             onClick={() => setAbierto(false)}
             className="mt-5 border border-bronze px-5 py-3 text-center text-[11px] uppercase tracking-wide text-bronze"
           >

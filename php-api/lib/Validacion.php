@@ -198,4 +198,53 @@ final class Validacion
 
         return $datos;
     }
+
+    public static function datosProyecto(array $input, bool $esCreacion): array
+    {
+        $datos = [];
+
+        $nombre = trim($input['nombre'] ?? '');
+        if ($esCreacion || array_key_exists('nombre', $input)) {
+            if (mb_strlen($nombre) < 2 || mb_strlen($nombre) > 160) {
+                Response::error('El nombre (producto instalado) es obligatorio (2 a 160 caracteres).', 400);
+            }
+            $datos['nombre'] = $nombre;
+        }
+
+        $etiqueta = trim($input['etiqueta'] ?? '');
+        if ($esCreacion || array_key_exists('etiqueta', $input)) {
+            if (mb_strlen($etiqueta) < 2 || mb_strlen($etiqueta) > 160) {
+                Response::error('La etiqueta (tipo de espacio y ubicación) es obligatoria (2 a 160 caracteres).', 400);
+            }
+            $datos['etiqueta'] = $etiqueta;
+        }
+
+        if (array_key_exists('cliente', $input)) {
+            $valor = trim((string) $input['cliente']);
+            if (mb_strlen($valor) > 160) {
+                Response::error('El cliente no puede superar los 160 caracteres.', 400);
+            }
+            $datos['cliente'] = $valor !== '' ? $valor : null;
+        }
+
+        if (array_key_exists('imagen', $input)) {
+            $valor = trim((string) $input['imagen']);
+            if (mb_strlen($valor) > 500) {
+                Response::error('La URL de la imagen es demasiado larga.', 400);
+            }
+            $datos['imagen'] = $valor !== '' ? $valor : null;
+        }
+
+        if (isset($input['esPrincipal'])) {
+            $datos['esPrincipal'] = in_array($input['esPrincipal'], ['1', 'true', 'on', 1, true], true);
+        }
+        if (isset($input['activo'])) {
+            $datos['activo'] = in_array($input['activo'], ['1', 'true', 'on', 1, true], true);
+        }
+        if (isset($input['orden'])) {
+            $datos['orden'] = max(0, (int) $input['orden']);
+        }
+
+        return $datos;
+    }
 }
