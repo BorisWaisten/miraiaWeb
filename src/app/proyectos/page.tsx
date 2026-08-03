@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { SiteNav } from '@/components/public/SiteNav';
 import { SiteFooter } from '@/components/public/SiteFooter';
 import { cldOptimizar } from '@/lib/cloudinary';
-import { apiGet } from '@/lib/api';
+import { apiGetCached } from '@/lib/api';
 import type { Proyecto } from '@/models/proyecto';
 
 /**
@@ -16,7 +16,7 @@ export default function ProyectosPage() {
   const [proyectos, setProyectos] = useState<Proyecto[] | null>(null);
 
   useEffect(() => {
-    apiGet<Proyecto[]>('/proyectos.php?limite=100').then((res) => setProyectos(res.data ?? []));
+    apiGetCached<Proyecto[]>('/proyectos?limite=100').then((res) => setProyectos(res.data ?? []));
   }, []);
 
   return (

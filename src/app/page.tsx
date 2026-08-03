@@ -10,7 +10,7 @@ import { WhyMiraia } from '@/components/public/WhyMiraia';
 import { Projects } from '@/components/public/Projects';
 import { ContactBanner } from '@/components/public/ContactBanner';
 import { SiteFooter } from '@/components/public/SiteFooter';
-import { apiGet } from '@/lib/api';
+import { apiGetCached } from '@/lib/api';
 import type { Producto } from '@/models/producto';
 import type { Proyecto } from '@/models/proyecto';
 
@@ -30,8 +30,8 @@ export default function HomePage() {
   const [proyectos, setProyectos] = useState<Proyecto[] | null>(null);
 
   useEffect(() => {
-    apiGet<Producto[]>('/productos.php').then((res) => setProductos(res.data ?? []));
-    apiGet<Proyecto[]>('/proyectos.php').then((res) => setProyectos(res.data ?? []));
+    apiGetCached<Producto[]>('/productos').then((res) => setProductos(res.data ?? []));
+    apiGetCached<Proyecto[]>('/proyectos').then((res) => setProyectos(res.data ?? []));
   }, []);
 
   const todos = productos ?? [];

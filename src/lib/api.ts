@@ -20,14 +20,17 @@ export interface ApiResult<T> {
   error?: string;
 }
 
-async function parseResponse<T>(res: Response): Promise<ApiResult<T>> {
+async function parseResponse<T>(res: Response): Promise<ApiResult<T> & { parseFallo: boolean }> {
   let body: { data?: T; error?: string } = {};
+  let parseFallo = false;
   try {
     body = await res.json();
   } catch {
-    // Respuestas sin body (ej. 204) — se ignora el parseo.
+    // Respuestas sin body (ej. 204) — se ignora el parseo. Distinto de una
+    // respuesta 2xx que sí trae body pero no es JSON (ver apiGet).
+    parseFallo = res.status !== 204;
   }
-  return { ok: res.ok, status: res.status, data: body.data, error: body.error };
+  return { ok: res.ok, status: res.status, data: body.data, error: body.error, parseFallo };
 }
 
 // ── Verificación de sesión admin con caché por pestaña ──
@@ -52,13 +55,44 @@ export function invalidarSesionAdmin(): void {
   sesionAdminCache = null;
 }
 
+// Reintentos en GET: SiteGround interpone un challenge anti-bot (sgcaptcha)
+// delante de la API para una porción de los requests que le llegan vía el
+// rewrite server-side de Vercel (ven la IP del datacenter de Vercel, no la
+// del visitante). Ese challenge responde 2xx con un HTML de redirect en vez
+// del JSON esperado, así que a los ojos de fetch() es una respuesta "ok" pero
+// no parseable. Es intermitente (no todos los requests lo disparan), así que
+// un par de reintentos alcanza para no mostrar secciones vacías al visitante
+// mientras se resuelve del lado de hosting (whitelistear /api/* en SiteGround).
+const GET_MAX_INTENTOS = 3;
+
 export async function apiGet<T>(path: string): Promise<ApiResult<T>> {
   // Timestamp anti-caché: el caché dinámico de SiteGround indexa por URL y
   // puede servir respuestas viejas de la API. Con esto cada GET la esquiva.
   const sep = path.includes('?') ? '&' : '?';
-  const res = await fetch(`${API_BASE_URL}${path}${sep}_t=${Date.now()}`, {
-    credentials: 'include',
-  });
+
+  let ultimoResultado: ApiResult<T> & { parseFallo: boolean };
+  for (let intento = 1; intento <= GET_MAX_INTENTOS; intento++) {
+    const res = await fetch(`${API_BASE_URL}${path}${sep}_t=${Date.now()}`, {
+      credentials: 'include',
+    });
+    ultimoResultado = await parseResponse<T>(res);
+    const esChallengeAntiBot = ultimoResultado.ok && ultimoResultado.parseFallo;
+    if (!esChallengeAntiBot || intento === GET_MAX_INTENTOS) break;
+    // Pequeña espera antes de reintentar: pegarle de nuevo sin pausa se parece
+    // más al tráfico en ráfaga que dispara el bloqueo, no menos.
+    await new Promise((resolve) => setTimeout(resolve, 400 * intento));
+  }
+  return ultimoResultado!;
+}
+
+/**
+ * Como apiGet, pero para los endpoints públicos de alto tráfico que tienen un
+ * proxy cacheado en /api-cache/* (ver src/app/api-cache/*) — sin timestamp
+ * anti-caché a propósito, así Vercel puede compartir la respuesta cacheada
+ * entre visitas en vez de pegarle a SiteGround en cada una.
+ */
+export async function apiGetCached<T>(path: string): Promise<ApiResult<T>> {
+  const res = await fetch(`/api-cache${path}`);
   return parseResponse<T>(res);
 }
 

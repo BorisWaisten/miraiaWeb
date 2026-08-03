@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { SiteNav } from '@/components/public/SiteNav';
 import { SiteFooter } from '@/components/public/SiteFooter';
 import { ProductoDetalle } from '@/components/public/ProductoDetalle';
-import { apiGet } from '@/lib/api';
+import { apiGetCached } from '@/lib/api';
 import { LINEAS, type Producto } from '@/models/producto';
 
 /**
@@ -22,7 +22,7 @@ export default function VerProductoPage() {
       new URLSearchParams(window.location.search).get('slug') ??
       window.location.pathname.match(/(?:alfombras-modulares|pisos-tecnicos)\/([^/]+)/)?.[1] ??
       null;
-    apiGet<Producto[]>('/productos.php').then((res) => {
+    apiGetCached<Producto[]>('/productos').then((res) => {
       const p = res.data?.find((x) => x.slug === slug) ?? null;
       setProducto(p);
       if (p) {

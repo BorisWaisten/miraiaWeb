@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { SiteNav } from '@/components/public/SiteNav';
 import { SiteFooter } from '@/components/public/SiteFooter';
-import { apiGet } from '@/lib/api';
+import { apiGetCached } from '@/lib/api';
 import { cldOptimizar } from '@/lib/cloudinary';
 import { LINEAS, parseEspecificaciones, urlProducto, type LineaProducto, type Producto } from '@/models/producto';
 
@@ -37,7 +37,7 @@ export default function ProductosPage() {
   const [productos, setProductos] = useState<Producto[] | null>(null);
 
   useEffect(() => {
-    apiGet<Producto[]>('/productos.php').then((res) => setProductos(res.data ?? []));
+    apiGetCached<Producto[]>('/productos').then((res) => setProductos(res.data ?? []));
   }, []);
 
   return (
