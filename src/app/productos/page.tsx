@@ -6,6 +6,7 @@ import { SiteNav } from '@/components/public/SiteNav';
 import { SiteFooter } from '@/components/public/SiteFooter';
 import { apiGetCached } from '@/lib/api';
 import { cldOptimizar } from '@/lib/cloudinary';
+import { SITE_URL } from '@/lib/site';
 import { LINEAS, parseEspecificaciones, urlProducto, type LineaProducto, type Producto } from '@/models/producto';
 
 /**
@@ -40,8 +41,34 @@ export default function ProductosPage() {
     apiGetCached<Producto[]>('/productos').then((res) => setProductos(res.data ?? []));
   }, []);
 
+  // ItemList JSON-LD del catálogo. Va acá (no en el layout, que es donde
+  // vive el <title>/description estáticos) porque el listado se conoce
+  // recién en runtime — la página es 'use client' (ver comentario de
+  // apiGetCached arriba). Google ejecuta el JS de la página al rastrear,
+  // así que lo toma igual que toma la grilla de productos misma.
+  const itemListJsonLd =
+    productos && productos.length > 0
+      ? {
+          '@context': 'https://schema.org/',
+          '@type': 'ItemList',
+          itemListElement: productos.map((p, i) => ({
+            '@type': 'ListItem',
+            position: i + 1,
+            url: new URL(urlProducto(p), SITE_URL).href,
+            name: p.nombre,
+            ...(p.imagenPrincipal && { image: new URL(p.imagenPrincipal, SITE_URL).href }),
+          })),
+        }
+      : null;
+
   return (
     <div className="bg-graphite">
+      {itemListJsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }}
+        />
+      )}
       <SiteNav />
 
       <main className="px-8 py-16 md:px-12">

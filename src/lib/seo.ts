@@ -1,12 +1,14 @@
 import type { Producto } from '@/models/producto';
 import type { BlogPost } from '@/models/blog';
+import { SITE_URL } from '@/lib/site';
 
 /**
- * Constantes y datos SEO usados EN TIEMPO DE BUILD (server components,
- * generateStaticParams, sitemap). No importar desde componentes 'use client'.
+ * Datos SEO usados EN TIEMPO DE BUILD (server components, generateStaticParams,
+ * sitemap). No importar desde componentes 'use client' — para SITE_URL solo,
+ * usar '@/lib/site' en su lugar.
  */
 
-export const SITE_URL = 'https://miraia.com.ar';
+export { SITE_URL };
 
 // La API PHP a consultar durante `next build` para conocer los slugs.
 // Por defecto producción; override con BUILD_API_BASE_URL si cambia.

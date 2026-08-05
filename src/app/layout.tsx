@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Script from 'next/script';
 import { Playfair_Display, Inter } from 'next/font/google';
 import { SITE_URL } from '@/lib/seo';
+import { WHATSAPP_NUMERO } from '@/lib/contacto';
 import { WhatsAppButton } from '@/components/public/WhatsAppButton';
 import './globals.css';
 
@@ -80,10 +81,45 @@ export const metadata: Metadata = {
 // Google Analytics 4 (ítem 04) — sin ID no se inyecta nada (dev/preview).
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
 
+// JSON-LD Organization + WebSite, presente en todas las páginas (a diferencia
+// del Product/BreadcrumbList que va por página en paginaProducto.tsx). Sin
+// esto Google no tiene una fuente consolidada del nombre/logo de la marca —
+// afecta el ícono/nombre que se muestra junto a los resultados y el
+// reconocimiento de marca en Búsqueda e Imágenes.
+const orgJsonLd = [
+  {
+    '@context': 'https://schema.org/',
+    '@type': 'Organization',
+    name: 'Miraia',
+    url: SITE_URL,
+    logo: new URL('/favicon-192x192.png', SITE_URL).href,
+    image: new URL('/og-image.png', SITE_URL).href,
+    email: 'info@miraia.com.ar',
+    address: { '@type': 'PostalAddress', addressLocality: 'CABA', addressRegion: 'Buenos Aires', addressCountry: 'AR' },
+    contactPoint: {
+      '@type': 'ContactPoint',
+      contactType: 'ventas',
+      telephone: `+${WHATSAPP_NUMERO}`,
+      areaServed: 'AR',
+      availableLanguage: 'Spanish',
+    },
+  },
+  {
+    '@context': 'https://schema.org/',
+    '@type': 'WebSite',
+    name: 'Miraia',
+    url: SITE_URL,
+  },
+];
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es-AR" className={`${fontSerif.variable} ${fontSans.variable}`}>
       <body className="font-sans bg-graphite text-white antialiased">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }}
+        />
         {children}
         <WhatsAppButton />
         {GA_ID && (
